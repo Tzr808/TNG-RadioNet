@@ -53,6 +53,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableIntStateOf
 import kotlinx.coroutines.flow.combine
 import com.armanmaurya.internetradio.ui.shared.theme.LocalAppPreferences
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -1410,6 +1411,8 @@ fun PlayerSheetContent(
                                 volumes.containsKey("$station.stationUuid:$deviceId")
                             }.collectAsStateWithLifecycle(false)
 
+
+
             var showBtPermissionDeniedDialog by remember { mutableStateOf(false) }
 
             val btPermissionLauncher = rememberLauncherForActivityResult(
@@ -1441,13 +1444,29 @@ fun PlayerSheetContent(
                     )
                     .combinedClickable(
                         onClick = {
-                            val needsPermission = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S &&
+                            // Determina il tipo di dispositivo attivo in tempo reale
+                            val currentDeviceType = try {
+                                val audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
+                                val devices = audioManager.getDevices(android.media.AudioManager.GET_DEVICES_ALL)
+                                val activeDevice = devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+                                    ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }
+                                    ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET }
+                                    ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_USB_DEVICE }
+                                    ?: devices.firstOrNull()
+                                activeDevice?.type ?: 0
+                            } catch (e: Exception) {
+                                0
+                            }
+
+                            // Chiedi il permesso Bluetooth SOLO se il dispositivo attivo è Bluetooth
+                            val needsBtPermission = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S &&
+                                currentDeviceType == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP &&
                                 androidx.core.content.ContextCompat.checkSelfPermission(
                                     context,
                                     android.Manifest.permission.BLUETOOTH_CONNECT
                                 ) != PackageManager.PERMISSION_GRANTED
 
-                            if (needsPermission) {
+                            if (needsBtPermission) {
                                 btPermissionLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT)
                             } else {
                                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
