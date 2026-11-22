@@ -64,6 +64,7 @@ class MobileActivity : AppCompatActivity() {
             return
         }
 
+        com.armanmaurya.internetradio.custom.locale.setDefaultLocale()
         initAppLocaleAndWidgets()
         enableEdgeToEdge()
 
