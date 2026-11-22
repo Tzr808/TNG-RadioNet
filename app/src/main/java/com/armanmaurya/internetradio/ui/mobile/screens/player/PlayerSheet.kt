@@ -88,7 +88,11 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import coil3.compose.SubcomposeAsyncImage
 import com.armanmaurya.internetradio.R
 import com.armanmaurya.internetradio.domain.model.CastDevice
@@ -1391,12 +1395,17 @@ fun PlayerSheetContent(
                             val viewModel = hiltViewModel<PlayerViewModel>()
                             val coroutineScope = rememberCoroutineScope()
                             
-                            val hasSavedVolume by combine(
+                            /** Info dispositivo corrente per i toast di conferma. */
+                            data class DeviceInfo(val id: String, val displayName: String)
+
+                            val deviceInfoState by combine(
                                 viewModel.playbackSession,
                                 viewModel.savedStationVolumes
                             ) { session, volumes ->
-                                val station = session.currentStation ?: return@combine false
-                                val deviceId = try {
+                                val station = session.currentStation ?: return@combine Pair(null, false)
+                                var deviceId = "default"
+                                var deviceType = 0
+                                try {
                                     val audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
                                     val devices = audioManager.getDevices(android.media.AudioManager.GET_DEVICES_ALL)
                                     val activeDevice = devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
@@ -1404,12 +1413,24 @@ fun PlayerSheetContent(
                                         ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET }
                                         ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_USB_DEVICE }
                                         ?: devices.firstOrNull()
-                                    activeDevice?.id?.toString() ?: "default"
+                                    deviceId = activeDevice?.id?.toString() ?: "default"
+                                    deviceType = activeDevice?.type ?: 0
                                 } catch (e: Exception) {
-                                    "default"
+                                    // ignore
                                 }
-                                volumes.containsKey("$station.stationUuid:$deviceId")
-                            }.collectAsStateWithLifecycle(false)
+                                val hasSaved = volumes.containsKey("$station.stationUuid:$deviceId")
+                                val displayName = when (deviceType) {
+                                    android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> "Casse integrate"
+                                    android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "Bluetooth"
+                                    android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Cuffie/cavo"
+                                    android.media.AudioDeviceInfo.TYPE_USB_DEVICE -> "USB"
+                                    else -> "Dispositivo"
+                                }
+                                Pair(DeviceInfo(deviceId, displayName), hasSaved)
+                            }.collectAsStateWithLifecycle(initialValue = Pair<DeviceInfo?, Boolean>(null, false))
+
+                            val currentDeviceInfo = deviceInfoState.value.first
+                            val hasSavedVolume = deviceInfoState.value.second
 
 
 
@@ -1472,6 +1493,15 @@ fun PlayerSheetContent(
                                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 coroutineScope.launch {
                                     viewModel.saveCurrentVolumeForCurrentStation()
+                                    val stationName = viewModel.playbackSession.value.currentStation?.name ?: "Sconosciuta"
+                                    val devInfo = currentDeviceInfo
+                                    if (devInfo != null) {
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Volume salvato per $stationName su ${devInfo.displayName}",
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 }
                             }
                         },
@@ -1479,25 +1509,68 @@ fun PlayerSheetContent(
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             coroutineScope.launch {
                                 viewModel.clearVolumeForCurrentStation()
+                                val stationName = viewModel.playbackSession.value.currentStation?.name ?: "Sconosciuta"
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "Volume cancellato per $stationName",
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = if (hasSavedVolume) Icons.Default.VolumeUp else Icons.Default.VolumeDown,
-                    contentDescription = "Volume per stazione/dispositivo",
-                    tint = if (hasSavedVolume) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSecondaryContainer
-                    },
-                    modifier = Modifier
-                        .size(28.dp)
-                        .graphicsLayer {
-                            scaleX = -1f
+                Box(
+                    modifier = Modifier.size(28.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (hasSavedVolume) Icons.Default.VolumeUp else Icons.Default.VolumeDown,
+                        contentDescription = "Volume per stazione/dispositivo",
+                        tint = if (hasSavedVolume) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        },
+                        modifier = Modifier
+                            .size(28.dp)
+                            .graphicsLayer {
+                                scaleX = -1f
+                            }
+                    )
+                    // Barretta curva indicatore di volume salvato
+                    if (hasSavedVolume) {
+                        Canvas(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .align(Alignment.TopEnd)
+                        ) {
+                            val path = Path()
+                            val arcRadius = size.width * 0.35f
+                            val centerX = size.width / 2f
+                            val centerY = size.height / 2f
+                            val startX = centerX - arcRadius
+                            val startY = centerY - arcRadius
+                            path.moveTo(startX + arcRadius, startY + arcRadius * 0.5f)
+                            path.arcTo(
+                                androidx.compose.ui.geometry.Rect(
+                                    startX,
+                                    startY,
+                                    startX + arcRadius * 2f,
+                                    startY + arcRadius * 2f
+                                ),
+                                startAngleDegrees = -45f,
+                                sweepAngleDegrees = 90f,
+                                forceMoveTo = false
+                            )
+                            drawPath(
+                                path = path,
+                                brush = androidx.compose.ui.graphics.Brush.solidColor(ComposeColor(0xFF4CAF50)),
+                                style = Stroke(width = 2.5f)
+                            )
                         }
-                )
+                    }
+                }
             }
 
             // Dialog permesso Bluetooth negato
