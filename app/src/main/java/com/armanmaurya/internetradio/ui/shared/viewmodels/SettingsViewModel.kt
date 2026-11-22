@@ -6,6 +6,7 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.armanmaurya.internetradio.domain.model.AppPreferences
+import com.armanmaurya.internetradio.domain.model.BufferLevel
 import com.armanmaurya.internetradio.domain.model.RecordingTimeFormat
 import com.armanmaurya.internetradio.domain.model.StartOfWeek
 import com.armanmaurya.internetradio.domain.repository.RecentRepository
@@ -220,6 +221,12 @@ class SettingsViewModel @Inject constructor(
     fun setLyricsProviderEnabled(providerId: String, enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setLyricsProviderEnabled(providerId, enabled)
+        }
+    }
+
+    fun setBufferLevel(level: BufferLevel) {
+        viewModelScope.launch {
+            settingsRepository.setBufferLevel(level)
         }
     }
 }

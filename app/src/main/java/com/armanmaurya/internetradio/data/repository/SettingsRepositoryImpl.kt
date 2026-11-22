@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.preferencesDataStore
 import com.armanmaurya.internetradio.domain.model.AppPreferences
+import com.armanmaurya.internetradio.domain.model.BufferLevel
 import com.armanmaurya.internetradio.domain.model.LibrarySortOption
 import com.armanmaurya.internetradio.domain.model.RecordingTimeFormat
 import com.armanmaurya.internetradio.domain.model.StartOfWeek
@@ -85,6 +86,7 @@ class SettingsRepositoryImpl @Inject constructor(
         val SHOW_STATION_THUMBNAILS = booleanPreferencesKey("show_station_thumbnails")
         val LYRICS_PROVIDER_ORDER = stringPreferencesKey("lyrics_provider_order")
         val ENABLED_LYRICS_PROVIDERS = androidx.datastore.preferences.core.stringSetPreferencesKey("enabled_lyrics_providers")
+        val BUFFER_LEVEL = stringPreferencesKey("buffer_level")
     }
 
     override val appPreferencesFlow: Flow<AppPreferences> = context.dataStore.data
@@ -209,7 +211,10 @@ class SettingsRepositoryImpl @Inject constructor(
                     ?.split(",")?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }
                     ?: listOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib"),
                 enabledLyricsProviders = preferences[PreferencesKeys.ENABLED_LYRICS_PROVIDERS]
-                    ?: setOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib")
+                    ?: setOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib"),
+                bufferLevel = preferences[PreferencesKeys.BUFFER_LEVEL]
+                    .let { name -> BufferLevel.entries.find { it.name == name } }
+                    ?: BufferLevel.STANDARD
             )
         }
 
@@ -471,6 +476,12 @@ class SettingsRepositoryImpl @Inject constructor(
                 ?: setOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib")
             val updated = if (enabled) current + providerId else current - providerId
             preferences[PreferencesKeys.ENABLED_LYRICS_PROVIDERS] = updated
+        }
+    }
+
+    override suspend fun setBufferLevel(level: BufferLevel) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.BUFFER_LEVEL] = level.name
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.armanmaurya.internetradio.domain.repository
 
 import com.armanmaurya.internetradio.domain.model.AppPreferences
+import com.armanmaurya.internetradio.domain.model.BufferLevel
 import com.armanmaurya.internetradio.domain.model.LibrarySortOption
 import com.armanmaurya.internetradio.domain.model.RecordingTimeFormat
 import com.armanmaurya.internetradio.domain.model.StartOfWeek
@@ -56,5 +57,7 @@ interface SettingsRepository {
     suspend fun setShowStationThumbnails(enabled: Boolean)
     suspend fun setLyricsProviderOrder(order: List<String>)
     suspend fun setLyricsProviderEnabled(providerId: String, enabled: Boolean)
+    /** Imposta il livello di buffer per l'ExoPlayer. */
+    suspend fun setBufferLevel(level: BufferLevel)
 }
 

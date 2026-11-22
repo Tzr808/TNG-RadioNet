@@ -95,6 +95,8 @@ class PlaybackService : MediaLibraryService() {
 
     private var showStationThumbnails: Boolean = true
     private var alarmFadeInSeconds: Int = 0
+    private var bufferLevel: com.armanmaurya.internetradio.domain.model.BufferLevel =
+        com.armanmaurya.internetradio.domain.model.BufferLevel.STANDARD
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -115,6 +117,7 @@ class PlaybackService : MediaLibraryService() {
                 showStationThumbnails = prefs.showStationThumbnails
                 alarmFadeInSeconds =
                     if (prefs.isAlarmVolumeTransitionEnabled) prefs.alarmVolumeTransitionSeconds else 0
+                bufferLevel = prefs.bufferLevel
             }
         }
 
@@ -207,9 +210,13 @@ class PlaybackService : MediaLibraryService() {
             }
         }
 
-        val exoPlayer = ExoPlayer.Builder(this).setRenderersFactory(renderersFactory)
-            .setMediaSourceFactory(mediaSourceFactory).setAudioAttributes(audioAttributes, true)
-            .setDeviceVolumeControlEnabled(true).build()
+        val exoPlayer = ExoPlayer.Builder(this)
+            .setRenderersFactory(renderersFactory)
+            .setMediaSourceFactory(mediaSourceFactory)
+            .setAudioAttributes(audioAttributes, true)
+            .setDeviceVolumeControlEnabled(true)
+            .setLoadControl(bufferLevel.toLoadControl().build())
+            .build()
 
         audioEffectsManager.attachToPlayer(exoPlayer)
 

@@ -620,4 +620,11 @@
     <string name="recording_folder_access_message">Allow access to Music/InternetRadio to keep track lists and notes next to your recordings and to show your older recordings.</string>
     <string name="recording_folder_access_grant">Grant access</string>
     <string name="recording_folder_access_wrong_folder">Please select the Music/InternetRadio folder</string>
+
+    <!-- ========================================== -->
+    <!-- Buffer Level Settings                      -->
+    <!-- ========================================== -->
+    <string name="settings_buffer_level">Buffer Level</string>
+    <string name="settings_buffer_standard">Standard (Default)</string>
+    <string name="settings_buffer_high">High (120s max)</string>
 </resources>

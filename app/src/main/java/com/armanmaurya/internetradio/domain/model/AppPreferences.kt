@@ -50,5 +50,7 @@ data class AppPreferences(
     val widgetBackgroundAlpha: Float = 1.0f,
     val showStationThumbnails: Boolean = true,
     val lyricsProviderOrder: List<String> = listOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib"),
-    val enabledLyricsProviders: Set<String> = setOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib")
+    val enabledLyricsProviders: Set<String> = setOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib"),
+    /** Livello di buffer per l'ExoPlayer (STANDARD o HIGH). */
+    val bufferLevel: BufferLevel = BufferLevel.STANDARD
 )

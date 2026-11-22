@@ -114,6 +114,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.armanmaurya.internetradio.R
 import com.armanmaurya.internetradio.domain.model.AppPreferences
+import com.armanmaurya.internetradio.domain.model.BufferLevel
 import com.armanmaurya.internetradio.domain.model.RecordingTimeFormat
 import com.armanmaurya.internetradio.domain.model.StartOfWeek
 import com.armanmaurya.internetradio.ui.shared.viewmodels.ExportViewModel
@@ -251,6 +252,7 @@ fun SettingsScreen(
                 onSetEnableVolumeBoost = viewModel::setEnableVolumeBoost,
                 onSetKeepScreenOn = viewModel::setKeepScreenOn,
                 onSetShowCoverArtInNotification = viewModel::setShowCoverArtInNotification,
+                onSetBufferLevel = viewModel::setBufferLevel,
                 showHistoryLimitDialog = showHistoryLimitDialog,
                 onToggleHistoryLimitDialog = { showHistoryLimitDialog = !showHistoryLimitDialog },
                 onSetHistoryLimit = viewModel::setTrackHistoryLimit,
@@ -720,6 +722,7 @@ private fun PlayerSection(
     onSetEnableVolumeBoost: (Boolean) -> Unit,
     onSetKeepScreenOn: (Boolean) -> Unit,
     onSetShowCoverArtInNotification: (Boolean) -> Unit,
+    onSetBufferLevel: (BufferLevel) -> Unit,
     showHistoryLimitDialog: Boolean,
     onToggleHistoryLimitDialog: () -> Unit,
     onSetHistoryLimit: (Int) -> Unit,
@@ -858,6 +861,32 @@ private fun PlayerSection(
             icon = Icons.Default.Lyrics,
             shape = bottomShape
         )
+
+        androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(2.dp))
+
+        val bufferOptions = listOf(
+            BufferLevel.STANDARD to stringResource(R.string.settings_buffer_standard),
+            BufferLevel.HIGH to stringResource(R.string.settings_buffer_high)
+        )
+        val currentBufferLabel = bufferOptions.find { it.first == uiState.bufferLevel }?.second
+            ?: stringResource(R.string.settings_buffer_standard)
+
+        ExpandableItem(
+            title = stringResource(R.string.settings_buffer_level),
+            subtitle = currentBufferLabel,
+            isExpanded = expandedItem == "BufferLevel",
+            onToggle = { onExpandedItemChange(if (expandedItem == "BufferLevel") null else "BufferLevel") },
+            icon = Icons.Default.Headphones,
+            shape = middleShape
+        ) {
+            bufferOptions.forEach { (level, label) ->
+                OptionItem(
+                    label = label,
+                    isSelected = uiState.bufferLevel == level,
+                    onClick = { onSetBufferLevel(level) }
+                )
+            }
+        }
 
         if (showHistoryLimitDialog) {
             var inputLimit by remember { mutableStateOf(uiState.trackHistoryLimit.toString()) }

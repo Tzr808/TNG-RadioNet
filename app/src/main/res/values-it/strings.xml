@@ -511,4 +511,11 @@
     <string name="import_diff_clears_languages">Cancella lingue</string>
     <string name="import_diff_clears_icon">Cancella icona</string>
     <string name="import_diff_update_icon">Aggiorna icona da file</string>
+
+    <!-- ========================================== -->
+    <!-- Buffer Level Settings                      -->
+    <!-- ========================================== -->
+    <string name="settings_buffer_level">Livello buffer</string>
+    <string name="settings_buffer_standard">Standard (Predefinito)</string>
+    <string name="settings_buffer_high">Alto (120s max)</string>
 </resources>
