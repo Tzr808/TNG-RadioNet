@@ -52,5 +52,7 @@ data class AppPreferences(
     val lyricsProviderOrder: List<String> = listOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib"),
     val enabledLyricsProviders: Set<String> = setOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib"),
     /** Livello di buffer per l'ExoPlayer (STANDARD o HIGH). */
-    val bufferLevel: BufferLevel = BufferLevel.STANDARD
+    val bufferLevel: BufferLevel = BufferLevel.STANDARD,
+    /** Volumi salvati per stazione+dispositivo. Chiave: "stationUuid:deviceId". */
+    val stationVolumes: Map<String, Float> = emptyMap()
 )

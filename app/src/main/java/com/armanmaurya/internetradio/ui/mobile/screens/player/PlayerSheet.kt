@@ -13,6 +13,9 @@ import com.armanmaurya.internetradio.ui.mobile.screens.player.components.TrackPi
 import com.armanmaurya.internetradio.ui.mobile.screens.player.components.VolumeDialog
 import com.armanmaurya.internetradio.ui.mobile.screens.player.components.TrackDialog
 import com.armanmaurya.internetradio.ui.mobile.screens.player.components.Controls
+import com.armanmaurya.internetradio.ui.mobile.screens.player.components.stationvolume.StationVolumeDialog
+import com.armanmaurya.internetradio.ui.mobile.screens.player.components.stationvolume.DiscoveredDevice
+import com.armanmaurya.internetradio.ui.mobile.screens.player.components.stationvolume.DeviceType
 import com.armanmaurya.internetradio.ui.mobile.screens.player.tabs.recordings.RecordingsTab
 import com.armanmaurya.internetradio.ui.mobile.screens.player.tabs.about.AboutTab
 import com.armanmaurya.internetradio.ui.mobile.screens.player.tabs.lyrics.LyricsTab
@@ -41,10 +44,16 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.automirrored.filled.VolumeDown
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.filled.*
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.flow.combine
 import com.armanmaurya.internetradio.ui.shared.theme.LocalAppPreferences
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -377,7 +386,11 @@ fun PlayerBottomSheet(
                         }
                     }
                 },
-                onDialogOpenChange = onDialogOpenChange
+                onDialogOpenChange = onDialogOpenChange,
+                onSaveStationVolume = { scope.launch { playerViewModel.saveCurrentVolumeForCurrentStation() } },
+                onClearStationVolume = { scope.launch { playerViewModel.clearVolumeForCurrentStation() } },
+                onVolumeSave = { vol -> scope.launch { playerViewModel.saveCurrentVolumeForCurrentStation(); /* volume already set via UI */ } },
+                onVolumeClearDialog = { scope.launch { playerViewModel.clearVolumeForCurrentStation() } }
             )
         }
     }
@@ -415,6 +428,10 @@ fun PlayerSheetContent(
     onToggleCurrentTrackStarred: () -> Unit = {},
     onDownloadHistoryLyrics: ((TrackHistoryEntity) -> Unit)? = null,
     onDialogOpenChange: (Boolean) -> Unit = {},
+    onSaveStationVolume: () -> Unit = {},
+    onClearStationVolume: () -> Unit = {},
+    onVolumeSave: (Float) -> Unit = {},
+    onVolumeClearDialog: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val playbackState = uiState
@@ -443,6 +460,7 @@ fun PlayerSheetContent(
     var searchDialogTrack by remember { mutableStateOf<String?>(null) }
     var showCastDialog by remember { mutableStateOf(false) }
     var showCoverArt by remember { mutableStateOf(false) }
+    var showStationVolumeDialog by remember { mutableStateOf(false) }
 
 
 
@@ -481,6 +499,12 @@ fun PlayerSheetContent(
     val showTimer = if (hasInfo) userToggledTimer else true
 
     var showVolumeDialog by remember { mutableStateOf(false) }
+
+    // ── Calcolo hasSavedVolume in scope accessibile a tutto ──
+    val stationVolumesMap = uiState.savedStationVolumes
+    val activeDeviceIdForVolume = uiState.activeDeviceId ?: "default"
+    val hasSavedVolume = stationVolumesMap.isNotEmpty() &&
+        stationVolumesMap.containsKey("$station.stationUuid:$activeDeviceIdForVolume")
 
     // Tell the sheet when a player dialog is open so dragging can't collapse it underneath.
     val isAnyDialogOpen = showCastDialog || showVolumeDialog || showSleepTimerDialog || searchDialogTrack != null
@@ -1360,6 +1384,121 @@ fun PlayerSheetContent(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // Volume per Stazione/Dispositivo Button (sinistra)
+                            val context = LocalContext.current
+                            val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+                            val viewModel = hiltViewModel<PlayerViewModel>()
+                            val coroutineScope = rememberCoroutineScope()
+                            
+                            val hasSavedVolume by combine(
+                                viewModel.playbackSession,
+                                viewModel.savedStationVolumes
+                            ) { session, volumes ->
+                                val station = session.currentStation ?: return@combine false
+                                val deviceId = try {
+                                    val audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
+                                    val devices = audioManager.getDevices(android.media.AudioManager.GET_DEVICES_ALL)
+                                    val activeDevice = devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+                                        ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }
+                                        ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET }
+                                        ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_USB_DEVICE }
+                                        ?: devices.firstOrNull()
+                                    activeDevice?.id?.toString() ?: "default"
+                                } catch (e: Exception) {
+                                    "default"
+                                }
+                                volumes.containsKey("$station.stationUuid:$deviceId")
+                            }.collectAsStateWithLifecycle(false)
+
+            var showBtPermissionDeniedDialog by remember { mutableStateOf(false) }
+
+            val btPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                if (isGranted == true) {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    coroutineScope.launch {
+                        viewModel.saveCurrentVolumeForCurrentStation()
+                    }
+                } else {
+                    showBtPermissionDeniedDialog = true
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    coroutineScope.launch {
+                        viewModel.saveCurrentVolumeForCurrentStation()
+                    }
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .width(recordButtonWidth)
+                    .height(64.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(
+                        color = if (hasSavedVolume) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                    .combinedClickable(
+                        onClick = {
+                            val needsPermission = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S &&
+                                androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.BLUETOOTH_CONNECT
+                                ) != PackageManager.PERMISSION_GRANTED
+
+                            if (needsPermission) {
+                                btPermissionLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT)
+                            } else {
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                coroutineScope.launch {
+                                    viewModel.saveCurrentVolumeForCurrentStation()
+                                }
+                            }
+                        },
+                        onLongClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            coroutineScope.launch {
+                                viewModel.clearVolumeForCurrentStation()
+                            }
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (hasSavedVolume) Icons.Default.VolumeUp else Icons.Default.VolumeDown,
+                    contentDescription = "Volume per stazione/dispositivo",
+                    tint = if (hasSavedVolume) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    },
+                    modifier = Modifier
+                        .size(28.dp)
+                        .graphicsLayer {
+                            scaleX = -1f
+                        }
+                )
+            }
+
+            // Dialog permesso Bluetooth negato
+            if (showBtPermissionDeniedDialog) {
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { showBtPermissionDeniedDialog = false },
+                    title = { Text("Permesso Bluetooth non concesso") },
+                    text = {
+                        Text(
+                            "Il permesso Bluetooth è stato negato. Il volume verrà comunque salvato, ma il nome del dispositivo (es. cuffie Bluetooth) non sarà visibile."
+                        )
+                    },
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(onClick = { showBtPermissionDeniedDialog = false }) {
+                            Text("OK")
+                        }
+                    }
+                )
+            }
+
                             // Waveform Pill
                             Row(
                                 modifier = Modifier
@@ -1727,6 +1866,43 @@ fun PlayerSheetContent(
             onVolumeChange = onVolumeChange,
             isCastActive = connectedCastDevice != null,
             isVolumeBoostEnabled = appPreferences.enableVolumeBoost
+        )
+
+        // ── Station Volume Dialog ──
+        val discoveredDevices = discoveredCastDevices.map { castDevice ->
+            DiscoveredDevice(
+                id = castDevice.id,
+                name = castDevice.name,
+                type = DeviceType.CAST
+            )
+        }
+        var dialogVolume by remember { mutableFloatStateOf(stationVolumesMap["${station.stationUuid}:$activeDeviceIdForVolume"] ?: volumeLevel) }
+
+        LaunchedEffect(showStationVolumeDialog) {
+            if (showStationVolumeDialog) {
+                dialogVolume = stationVolumesMap["${station.stationUuid}:$activeDeviceIdForVolume"] ?: volumeLevel
+            }
+        }
+
+        StationVolumeDialog(
+            showDialog = showStationVolumeDialog,
+            onDismissRequest = { showStationVolumeDialog = false },
+            currentVolume = dialogVolume,
+            onVolumeChange = { dialogVolume = it },
+            onVolumeSave = { vol ->
+                onVolumeSave(vol)
+                showStationVolumeDialog = false
+            },
+            onVolumeClear = {
+                onVolumeClearDialog()
+                showStationVolumeDialog = false
+            },
+            hasSavedVolume = hasSavedVolume,
+            isCastActive = connectedCastDevice != null,
+            connectedCastDeviceName = connectedCastDevice?.name,
+            discoveredDevices = discoveredDevices,
+            activeDeviceId = activeDeviceIdForVolume,
+            stationName = station.name.ifBlank { null }
         )
 
         SleepTimerDialog(

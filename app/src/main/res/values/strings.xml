@@ -627,4 +627,17 @@
     <string name="settings_buffer_level">Buffer Level</string>
     <string name="settings_buffer_standard">Standard (Default)</string>
     <string name="settings_buffer_high">High (120s max)</string>
+
+    <!-- ========================================== -->
+    <!-- Station Volume (per-stazione + dispositivo) -->
+    <!-- ========================================== -->
+    <string name="player_volume">Volume</string>
+    <string name="player_volume_station_label">Volume per stazione</string>
+    <string name="player_volume_device_label">Dispositivi</string>
+    <string name="player_volume_save">Salva volume</string>
+    <string name="player_volume_clear_label">Cancella volume salvato</string>
+    <string name="player_volume_saved">Volume salvato per questa stazione</string>
+    <string name="player_volume_cleared">Volume salvato cancellato</string>
+    <string name="player_volume_active_device">Attivo</string>
+    <string name="player_cd_station_volume">Volume per stazione</string>
 </resources>

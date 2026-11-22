@@ -48,5 +48,9 @@ data class PlayerUiState(
     val activeSessions: Map<String, RecordingSession> = emptyMap(),
     val selectedLyricsProviderId: String? = null,
     val customLyricsQueryTitle: String? = null,
-    val customLyricsQueryArtist: String? = null
+    val customLyricsQueryArtist: String? = null,
+    /** Volumi salvati per stazione+dispositivo. Chiave: "stationUuid:deviceId". */
+    val savedStationVolumes: Map<String, Float> = emptyMap(),
+    /** ID del dispositivo audio corrente (Cast, Bluetooth, speaker, ecc.). */
+    val activeDeviceId: String? = null
 )

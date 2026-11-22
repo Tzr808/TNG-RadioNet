@@ -514,7 +514,8 @@ class PlayerViewModel @Inject constructor(
             playbackSource = session.playbackSource,
             selectedLyricsProviderId = extra.selectedProviderId,
             customLyricsQueryTitle = extra.customQuery?.trackTitle,
-            customLyricsQueryArtist = extra.customQuery?.artistName
+            customLyricsQueryArtist = extra.customQuery?.artistName,
+            activeDeviceId = if (isCasting) cast.connectedDevice?.name ?: cast.connectedDevice?.id else getActiveDeviceId()
         )
     }.stateIn(
         scope = viewModelScope,
@@ -840,6 +841,59 @@ class PlayerViewModel @Inject constructor(
         val stationUuid = playbackSession.value.currentStation?.stationUuid ?: return
         viewModelScope.launch {
             trackHistoryRepository.toggleTrackStarred(stationUuid, trackTitle, isStarred)
+        }
+    }
+
+    // ── Station volumes (per-stazione + dispositivo) ──
+
+    /** Volumi salvati per stazione+dispositivo, esposti come StateFlow. */
+    val savedStationVolumes: kotlinx.coroutines.flow.StateFlow<Map<String, Float>> = settingsRepository.appPreferencesFlow
+        .map { it.stationVolumes }
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    /** Recupera il volume salvato per la stazione corrente e il dispositivo attivo. */
+    fun getVolumeForCurrentStation(): Float? {
+        val station = playbackSession.value.currentStation ?: return null
+        val deviceId = getActiveDeviceId()
+        return savedStationVolumes.value["$station.stationUuid:$deviceId"]
+    }
+
+    /** Salva il volume corrente del telefono per la stazione corrente e il dispositivo attivo. */
+    suspend fun saveCurrentVolumeForCurrentStation() {
+        val station = playbackSession.value.currentStation ?: return
+        val deviceId = getActiveDeviceId()
+        val currentVolume = playbackSession.value.volume
+        settingsRepository.setStationVolume(station.stationUuid, deviceId, currentVolume)
+    }
+
+    /** Cancella il volume salvato per la stazione corrente e il dispositivo attivo. */
+    suspend fun clearVolumeForCurrentStation() {
+        val station = playbackSession.value.currentStation ?: return
+        val deviceId = getActiveDeviceId()
+        settingsRepository.clearStationVolume(station.stationUuid, deviceId)
+    }
+
+    /** Verifica se esiste un volume salvato per la combinazione stazione+dispositivo corrente. */
+    fun hasSavedVolumeForCurrentStation(): Boolean {
+        val station = playbackSession.value.currentStation ?: return false
+        val deviceId = getActiveDeviceId()
+        return savedStationVolumes.value.containsKey("$station.stationUuid:$deviceId")
+    }
+
+    /** Recupera l'ID del dispositivo audio attivo corrente. */
+    private fun getActiveDeviceId(): String {
+        try {
+            val audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
+            val devices = audioManager.getDevices(android.media.AudioManager.GET_DEVICES_ALL)
+            // Cerca il dispositivo attivo: casse integrate, Bluetooth, USB, ecc.
+            val activeDevice = devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+                ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }
+                ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET }
+                ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_USB_DEVICE }
+                ?: devices.firstOrNull()
+            return activeDevice?.id?.toString() ?: "default"
+        } catch (e: Exception) {
+            return "default"
         }
     }
 }

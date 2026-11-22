@@ -87,6 +87,7 @@ class SettingsRepositoryImpl @Inject constructor(
         val LYRICS_PROVIDER_ORDER = stringPreferencesKey("lyrics_provider_order")
         val ENABLED_LYRICS_PROVIDERS = androidx.datastore.preferences.core.stringSetPreferencesKey("enabled_lyrics_providers")
         val BUFFER_LEVEL = stringPreferencesKey("buffer_level")
+        val STATION_VOLUMES_JSON = stringPreferencesKey("station_volumes_json")
     }
 
     override val appPreferencesFlow: Flow<AppPreferences> = context.dataStore.data
@@ -214,7 +215,11 @@ class SettingsRepositoryImpl @Inject constructor(
                     ?: setOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib"),
                 bufferLevel = preferences[PreferencesKeys.BUFFER_LEVEL]
                     .let { name -> BufferLevel.entries.find { it.name == name } }
-                    ?: BufferLevel.STANDARD
+                    ?: BufferLevel.STANDARD,
+                stationVolumes = run {
+                    val raw = preferences[PreferencesKeys.STATION_VOLUMES_JSON]
+                    if (raw != null) raw.toStationVolumesMap() else emptyMap()
+                }
             )
         }
 
@@ -479,10 +484,77 @@ class SettingsRepositoryImpl @Inject constructor(
         }
     }
 
+
+
+    override suspend fun getStationVolume(stationUuid: String, deviceId: String): Float? {
+        val volumes = context.dataStore.data.first()[PreferencesKeys.STATION_VOLUMES_JSON]?.let { it.toStationVolumesMap() } ?: emptyMap()
+        return volumes["$stationUuid:$deviceId"]
+    }
+
+    override suspend fun setStationVolume(stationUuid: String, deviceId: String, volume: Float) {
+        val current = context.dataStore.data.first()[PreferencesKeys.STATION_VOLUMES_JSON]?.let { it.toStationVolumesMap() } ?: emptyMap()
+        val updated = current.toMutableMap().apply { this["$stationUuid:$deviceId"] = volume }
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.STATION_VOLUMES_JSON] = updated.toJson()
+        }
+    }
+
+    override suspend fun clearStationVolume(stationUuid: String, deviceId: String) {
+        val current = context.dataStore.data.first()[PreferencesKeys.STATION_VOLUMES_JSON]?.let { it.toStationVolumesMap() } ?: emptyMap()
+        val key = "$stationUuid:$deviceId"
+        if (current.containsKey(key)) {
+            val updated = current.toMutableMap().apply { remove(key) }
+            context.dataStore.edit { preferences ->
+                preferences[PreferencesKeys.STATION_VOLUMES_JSON] = updated.toJson()
+            }
+        }
+    }
+
+    override suspend fun getSavedStationVolumes(): Map<String, Float> {
+        return context.dataStore.data.first()[PreferencesKeys.STATION_VOLUMES_JSON]?.let { it.toStationVolumesMap() } ?: emptyMap()
+    }
+
     override suspend fun setBufferLevel(level: BufferLevel) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.BUFFER_LEVEL] = level.name
         }
     }
+}
+
+// ── Extension functions per serializzazione volumi stazione ──
+
+/** Converte una Map<String, Float> in JSON string. */
+internal fun Map<String, Float>.toJson(): String {
+    if (isEmpty()) return "{}"
+    val sb = StringBuilder()
+    sb.append('{')
+    var first = true
+    for ((key, value) in this) {
+        if (!first) sb.append(',')
+        sb.append('"').append(key.replace("\"", "\\\""))
+            .append(':').append(value)
+        first = false
+    }
+    sb.append('}')
+    return sb.toString()
+}
+
+/** Converte una JSON string in Map<String, Float>. */
+internal fun String.toStationVolumesMap(): Map<String, Float> {
+    val map = mutableMapOf<String, Float>()
+    val trimmed = trim().removePrefix("{").removeSuffix("}")
+    if (trimmed.isBlank()) return map
+    val pairs = trimmed.split(",")
+    for (pair in pairs) {
+        val parts = pair.split(':', limit = 2)
+        if (parts.size == 2) {
+            val key = parts[0].trim().replace("\\\"", "\"")
+            val value = parts[1].trim().toFloatOrNull()
+            if (key.isNotBlank() && value != null) {
+                map[key] = value
+            }
+        }
+    }
+    return map
 }
 

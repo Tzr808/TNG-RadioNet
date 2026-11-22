@@ -59,5 +59,24 @@ interface SettingsRepository {
     suspend fun setLyricsProviderEnabled(providerId: String, enabled: Boolean)
     /** Imposta il livello di buffer per l'ExoPlayer. */
     suspend fun setBufferLevel(level: BufferLevel)
+
+    // ── Station volumes (per-stazione + dispositivo) ──
+
+    /** Chiave univoca per volume: "stationUuid:deviceId". */
+    companion object {
+        private val STATION_VOLUMES_KEY = androidx.datastore.preferences.core.stringPreferencesKey("station_volumes")
+    }
+
+    /** Recupera il volume salvato per una specifica stazione+dispositivo. */
+    suspend fun getStationVolume(stationUuid: String, deviceId: String): Float?
+
+    /** Salva il volume per una specifica stazione+dispositivo. */
+    suspend fun setStationVolume(stationUuid: String, deviceId: String, volume: Float)
+
+    /** Cancella il volume salvato per una specifica stazione+dispositivo. */
+    suspend fun clearStationVolume(stationUuid: String, deviceId: String)
+
+    /** Restituisce tutte le combinazioni stazione+dispositivo con volume salvato. */
+    suspend fun getSavedStationVolumes(): Map<String, Float>
 }
 
