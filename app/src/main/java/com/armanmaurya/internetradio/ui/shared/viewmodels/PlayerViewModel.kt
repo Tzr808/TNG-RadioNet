@@ -109,6 +109,9 @@ class PlayerViewModel @Inject constructor(
         stationVolumeManager.clearSavedVolume()
     }
 
+    /** Restituisce il tipo del dispositivo audio attivo (senza bisogno di permessi). */
+    fun getActiveDeviceType(): String = stationVolumeManager.getActiveDeviceType()
+
     val retryCountdown = retryStateTracker.retryCountdown
     val retryToastEvent = retryStateTracker.retryToastEvent
 

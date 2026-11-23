@@ -1432,13 +1432,17 @@ fun PlayerSheetContent(
                                     )
                                     .combinedClickable(
                                         onClick = {
-                                            val needsPermission = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S &&
+                                            // Controlla il tipo di dispositivo attivo PRIMA di chiedere il permesso
+                                            val deviceType = viewModel.getActiveDeviceType()
+                                            val isBluetoothDevice = deviceType == "bluetooth" || deviceType == "ble_bluetooth"
+                                            val needsBtPermission = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S &&
+                                                isBluetoothDevice &&
                                                 androidx.core.content.ContextCompat.checkSelfPermission(
                                                     context,
                                                     android.Manifest.permission.BLUETOOTH_CONNECT
                                                 ) != PackageManager.PERMISSION_GRANTED
                                             
-                                            if (needsPermission) {
+                                            if (needsBtPermission) {
                                                 btPermissionLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT)
                                             } else {
                                                 // Vibrazione leggera di conferma salvataggio
