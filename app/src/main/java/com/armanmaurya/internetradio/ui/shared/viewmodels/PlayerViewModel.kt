@@ -47,6 +47,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -55,6 +56,7 @@ import com.armanmaurya.internetradio.domain.model.CastDevice
 import com.armanmaurya.internetradio.domain.model.CastPlaybackState
 import com.armanmaurya.internetradio.domain.usecase.cast.ConnectCastDeviceUseCase
 import com.armanmaurya.internetradio.domain.usecase.cast.DisconnectCastDeviceUseCase
+import com.armanmaurya.internetradio.service.playback.StationVolumeManager
 
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
@@ -84,6 +86,28 @@ class PlayerViewModel @Inject constructor(
     private val lyricsRepository: com.armanmaurya.internetradio.domain.repository.LyricsRepository,
     retryStateTracker: RetryStateTracker
 ) : ViewModel() {
+
+    // ── Station Volume Manager Integration ──
+    private val stationVolumeManager = StationVolumeManager(context) { isSaved ->
+        _hasSavedVolumeForCurrentStation.value = isSaved
+    }
+
+    private val _hasSavedVolumeForCurrentStation = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val hasSavedVolumeForCurrentStation: kotlinx.coroutines.flow.StateFlow<Boolean> = _hasSavedVolumeForCurrentStation.asStateFlow()
+
+    fun onCurrentStationChanged(stationId: String, stationName: String) {
+        stationVolumeManager.onStationSelected(stationId, stationName)
+    }
+
+    /** Salva il volume corrente con Toast di conferma (usa StationVolumeManager). */
+    fun saveCurrentVolume() {
+        stationVolumeManager.saveCurrentVolume()
+    }
+
+    /** Cancella il volume salvato con Toast di conferma (usa StationVolumeManager). */
+    fun clearCurrentSavedVolume() {
+        stationVolumeManager.clearSavedVolume()
+    }
 
     val retryCountdown = retryStateTracker.retryCountdown
     val retryToastEvent = retryStateTracker.retryToastEvent
