@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TNG RadioNet branding overrides -->
+    <string name="app_name">TNG RadioNet</string>
+    <string name="tng_about_version_format">ver. T %1$s</string>
+    <string name="tng_about_based_on">基于原始应用 Internet Radio</string>
+    <string name="tng_about_author">Arman Maurya</string>
+    <string name="tng_about_available_on">可在</string>
+    <string name="tng_about_github">GitHub</string>
+    <string name="settings_about_foss_edition">TNG 版本</string>
+</resources>

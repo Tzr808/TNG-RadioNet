@@ -642,4 +642,13 @@
     <string name="player_volume_cleared">Volume salvato cancellato</string>
     <string name="player_volume_active_device">Attivo</string>
     <string name="player_cd_station_volume">Volume per stazione</string>
+
+    <!-- ========================================== -->
+    <!-- TNG RadioNet branding (placeholder, overridden by tng flavor) -->
+    <!-- ========================================== -->
+    <string name="tng_about_version_format">ver. %1$s</string>
+    <string name="tng_about_based_on">Based on original app Internet Radio by</string>
+    <string name="tng_about_author">Arman Maurya</string>
+    <string name="tng_about_available_on">available on</string>
+    <string name="tng_about_github">GitHub</string>
 </resources>

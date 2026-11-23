@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TNG RadioNet branding overrides -->
+    <string name="app_name">TNG RadioNet</string>
+    <string name="tng_about_version_format">ver. T %1$s</string>
+    <string name="tng_about_based_on">Orijinal Internet Radio uygulamasına dayanarak</string>
+    <string name="tng_about_author">Arman Maurya</string>
+    <string name="tng_about_available_on">adresinde mevcut</string>
+    <string name="tng_about_github">GitHub</string>
+    <string name="settings_about_foss_edition">TNG Sürümü</string>
+</resources>
