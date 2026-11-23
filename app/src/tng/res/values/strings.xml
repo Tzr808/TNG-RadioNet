@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Override app name for TNG RadioNet build -->
+    <string name="app_name">TNG RadioNet</string>
+    <string name="tng_about_version_format">ver. T %1$s</string>
+    <string name="tng_about_based_on">Based on original app Internet Radio by</string>
+    <string name="tng_about_author">Arman Maurya</string>
+    <string name="tng_about_available_on">available on</string>
+    <string name="tng_about_github">GitHub</string>
+    <string name="settings_about_foss_edition">TNG Edition</string>
+</resources>

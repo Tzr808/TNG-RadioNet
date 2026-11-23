@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Default: not TNG flavor. Overridden by tng flavor resource overlay. -->
+    <bool name="is_tng_flavor">false</bool>
+</resources>

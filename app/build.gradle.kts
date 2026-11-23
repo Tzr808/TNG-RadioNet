@@ -81,6 +81,10 @@ android {
         create("play") {
             dimension = "store"
         }
+        // TNG custom flavor — overrides app branding via resource overlay
+        create("tng") {
+            dimension = "store"
+        }
     }
 
     buildTypes {
