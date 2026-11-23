@@ -88,6 +88,7 @@ class SettingsRepositoryImpl @Inject constructor(
         val ENABLED_LYRICS_PROVIDERS = androidx.datastore.preferences.core.stringSetPreferencesKey("enabled_lyrics_providers")
         val BUFFER_LEVEL = stringPreferencesKey("buffer_level")
         val STATION_VOLUMES_JSON = stringPreferencesKey("station_volumes_json")
+        val PURE_BLACK_ENABLED = booleanPreferencesKey("pure_black_enabled")
     }
 
     override val appPreferencesFlow: Flow<AppPreferences> = context.dataStore.data
@@ -163,6 +164,7 @@ class SettingsRepositoryImpl @Inject constructor(
             val alarmVolumeTransitionSeconds = preferences[PreferencesKeys.ALARM_VOLUME_TRANSITION_SECONDS] ?: 15
             val widgetBackgroundAlpha = preferences[PreferencesKeys.WIDGET_BACKGROUND_ALPHA] ?: 1.0f
             val showStationThumbnails = preferences[PreferencesKeys.SHOW_STATION_THUMBNAILS] ?: true
+            val isPureBlackEnabled = preferences[PreferencesKeys.PURE_BLACK_ENABLED] ?: false
 
             AppPreferences(
                 themeMode = themeMode, 
@@ -208,6 +210,7 @@ class SettingsRepositoryImpl @Inject constructor(
                 alarmVolumeTransitionSeconds = alarmVolumeTransitionSeconds,
                 widgetBackgroundAlpha = widgetBackgroundAlpha,
                 showStationThumbnails = showStationThumbnails,
+                isPureBlackEnabled = isPureBlackEnabled,
                 lyricsProviderOrder = preferences[PreferencesKeys.LYRICS_PROVIDER_ORDER]
                     ?.split(",")?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }
                     ?: listOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib"),
@@ -518,6 +521,20 @@ class SettingsRepositoryImpl @Inject constructor(
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.BUFFER_LEVEL] = level.name
         }
+    }
+
+    // ── Pure Black ──
+
+    override suspend fun setPureBlackEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.PURE_BLACK_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun getPureBlackEnabled(): Boolean {
+        return context.dataStore.data
+            .map { preferences -> preferences[PreferencesKeys.PURE_BLACK_ENABLED] ?: false }
+            .first()
     }
 }
 

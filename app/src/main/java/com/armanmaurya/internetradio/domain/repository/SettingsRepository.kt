@@ -78,5 +78,13 @@ interface SettingsRepository {
 
     /** Restituisce tutte le combinazioni stazione+dispositivo con volume salvato. */
     suspend fun getSavedStationVolumes(): Map<String, Float>
+
+    // ── Pure Black ──
+
+    /** Abilita/disabilita lo sfondo nero puro in modalità scura. */
+    suspend fun setPureBlackEnabled(enabled: Boolean)
+
+    /** Recupera lo stato attuale del toggle Pure Black. */
+    suspend fun getPureBlackEnabled(): Boolean
 }
 

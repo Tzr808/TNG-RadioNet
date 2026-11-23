@@ -1,6 +1,7 @@
 package com.armanmaurya.internetradio.data.repository
 
 import com.armanmaurya.internetradio.domain.model.AppPreferences
+import com.armanmaurya.internetradio.domain.model.BufferLevel
 import com.armanmaurya.internetradio.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,4 +65,30 @@ internal class FakeSettingsRepository : SettingsRepository {
         val updated = if (enabled) current + providerId else current - providerId
         prefsFlow.value = prefsFlow.value.copy(enabledLyricsProviders = updated)
     }
+
+    // Buffer level
+    private var _bufferLevel = BufferLevel.STANDARD
+    override suspend fun setBufferLevel(level: BufferLevel) {
+        _bufferLevel = level
+    }
+
+    // Station volumes
+    private val stationVolumes = mutableMapOf<String, Float>()
+    override suspend fun getStationVolume(stationUuid: String, deviceId: String): Float? {
+        return stationVolumes["$stationUuid:$deviceId"]
+    }
+    override suspend fun setStationVolume(stationUuid: String, deviceId: String, volume: Float) {
+        stationVolumes["$stationUuid:$deviceId"] = volume
+    }
+    override suspend fun clearStationVolume(stationUuid: String, deviceId: String) {
+        stationVolumes.remove("$stationUuid:$deviceId")
+    }
+    override suspend fun getSavedStationVolumes(): Map<String, Float> = stationVolumes.toMap()
+
+    // Pure Black
+    private var _pureBlackEnabled = false
+    override suspend fun setPureBlackEnabled(enabled: Boolean) {
+        _pureBlackEnabled = enabled
+    }
+    override suspend fun getPureBlackEnabled(): Boolean = _pureBlackEnabled
 }

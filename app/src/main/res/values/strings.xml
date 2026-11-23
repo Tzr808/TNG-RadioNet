@@ -68,6 +68,8 @@
     <string name="settings_custom_color_title">Custom Color</string>
     <string name="settings_custom_color_apply">Apply</string>
     <string name="settings_custom_color_cancel">Cancel</string>
+    <string name="settings_pure_black_title">Pure Black</string>
+    <string name="settings_pure_black_desc">Use pure black background in dark mode</string>
     <string name="settings_show_station_thumbnails">Show station thumbnails</string>
     <string name="settings_show_station_thumbnails_desc">Station logos in lists and player</string>
     <string name="settings_general_section">General</string>

@@ -2,6 +2,7 @@ package com.armanmaurya.internetradio.ui.shared.viewmodels
 
 import android.content.ContextWrapper
 import com.armanmaurya.internetradio.domain.model.AppPreferences
+import com.armanmaurya.internetradio.domain.model.BufferLevel
 import com.armanmaurya.internetradio.domain.model.Country
 import com.armanmaurya.internetradio.domain.model.Language
 import com.armanmaurya.internetradio.domain.model.LibrarySortOption
@@ -260,5 +261,31 @@ class BrowseViewModelTest {
         override suspend fun setShowStationThumbnails(enabled: Boolean) {}
         override suspend fun setLyricsProviderOrder(order: List<String>) {}
         override suspend fun setLyricsProviderEnabled(providerId: String, enabled: Boolean) {}
+
+        // Buffer level
+        private var _bufferLevel = BufferLevel.STANDARD
+        override suspend fun setBufferLevel(level: BufferLevel) {
+            _bufferLevel = level
+        }
+
+        // Station volumes
+        private val stationVolumes = mutableMapOf<String, Float>()
+        override suspend fun getStationVolume(stationUuid: String, deviceId: String): Float? {
+            return stationVolumes["$stationUuid:$deviceId"]
+        }
+        override suspend fun setStationVolume(stationUuid: String, deviceId: String, volume: Float) {
+            stationVolumes["$stationUuid:$deviceId"] = volume
+        }
+        override suspend fun clearStationVolume(stationUuid: String, deviceId: String) {
+            stationVolumes.remove("$stationUuid:$deviceId")
+        }
+        override suspend fun getSavedStationVolumes(): Map<String, Float> = stationVolumes.toMap()
+
+        // Pure Black
+        private var _pureBlackEnabled = false
+        override suspend fun setPureBlackEnabled(enabled: Boolean) {
+            _pureBlackEnabled = enabled
+        }
+        override suspend fun getPureBlackEnabled(): Boolean = _pureBlackEnabled
     }
 }

@@ -360,6 +360,8 @@
     <string name="settings_custom_color_title">Colore personalizzato</string>
     <string name="settings_custom_color_apply">Applica</string>
     <string name="settings_custom_color_cancel">Annulla</string>
+    <string name="settings_pure_black_title">Pure Black</string>
+    <string name="settings_pure_black_desc">Usa sfondo nero puro in modalità scura</string>
     <string name="settings_keep_screen_on_title">Mantieni schermo attivo</string>
     <string name="settings_keep_screen_on_desc">Mantieni lo schermo attivo quando il player è espanso</string>
     <string name="settings_widget_section">Widget</string>
