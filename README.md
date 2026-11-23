@@ -2,6 +2,10 @@
 
 <img src="app/src/main/ic_launcher-playstore.png" width="128" height="128" style="border-radius: 50%;" />
 
+> **Nota:** Questo è un fork personale di [InternetRadio](https://github.com) modificato esclusivamente per uso privato. Non si accettano richieste di nuove funzionalità o supporto.
+> 
+> **Note:** This is a personal fork of [InternetRadio](https://github.com) modified for personal use only. Feature requests and support are not accepted.
+
 # InternetRadio
 
 InternetRadio is an Android app for discovering and listening to radio stations from around the world, with features like favorites, recent history, and advanced search by country,language and tags.
