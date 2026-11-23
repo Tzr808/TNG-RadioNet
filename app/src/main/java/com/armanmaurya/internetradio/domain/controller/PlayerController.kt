@@ -33,4 +33,10 @@ interface PlayerController {
     fun cancelSleepTimer()
     fun setLyricsSyncOffset(offsetMs: Long)
     fun updateAmplitude(rms: Float)
+
+    /**
+     * Rilascia la connessione al servizio di riproduzione per liberare il binding.
+     * Viene ricreata automaticamente alla prossima operazione. No-op di default.
+     */
+    fun releaseController() {}
 }

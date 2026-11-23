@@ -360,8 +360,6 @@
     <string name="settings_custom_color_title">Colore personalizzato</string>
     <string name="settings_custom_color_apply">Applica</string>
     <string name="settings_custom_color_cancel">Annulla</string>
-    <string name="settings_pure_black_title">Pure Black</string>
-    <string name="settings_pure_black_desc">Usa sfondo nero puro in modalità scura</string>
     <string name="settings_keep_screen_on_title">Mantieni schermo attivo</string>
     <string name="settings_keep_screen_on_desc">Mantieni lo schermo attivo quando il player è espanso</string>
     <string name="settings_widget_section">Widget</string>
@@ -514,10 +512,4 @@
     <string name="import_diff_clears_icon">Cancella icona</string>
     <string name="import_diff_update_icon">Aggiorna icona da file</string>
 
-    <!-- ========================================== -->
-    <!-- Buffer Level Settings                      -->
-    <!-- ========================================== -->
-    <string name="settings_buffer_level">Livello buffer</string>
-    <string name="settings_buffer_standard">Standard (Predefinito)</string>
-    <string name="settings_buffer_high">Alto (120s max)</string>
 </resources>

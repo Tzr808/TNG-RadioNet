@@ -16,6 +16,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.lifecycleScope
 import com.armanmaurya.internetradio.R
+import com.armanmaurya.internetradio.domain.controller.PlayerController
 import com.armanmaurya.internetradio.domain.controller.WidgetController
 import com.armanmaurya.internetradio.domain.repository.SettingsRepository
 import com.armanmaurya.internetradio.service.PlaybackService
@@ -35,6 +36,12 @@ class MobileActivity : AppCompatActivity() {
 
     @Inject
     lateinit var widgetController: WidgetController
+
+    @Inject
+    lateinit var playerController: PlayerController
+
+    /** true quando l'activity passa il controllo a TvActivity: in quel caso non va rilasciato nulla. */
+    private var handedOverToTv = false
 
     private val _intentFlow = MutableSharedFlow<Intent>(
         replay = 1,
@@ -60,11 +67,11 @@ class MobileActivity : AppCompatActivity() {
             startActivity(Intent(this, TvActivity::class.java).apply {
                 if (TvActivity.wantsPlayer(intent)) putExtra(TvActivity.EXTRA_OPEN_PLAYER, true)
             })
+            handedOverToTv = true
             finish()
             return
         }
 
-        com.armanmaurya.internetradio.custom.locale.setDefaultLocale()
         initAppLocaleAndWidgets()
         enableEdgeToEdge()
 
@@ -75,6 +82,15 @@ class MobileActivity : AppCompatActivity() {
                 widthSizeClass = windowSizeClass.widthSizeClass
             )
         }
+    }
+
+    override fun onDestroy() {
+        // Quando l'utente chiude davvero l'app liberiamo il binding al PlaybackService:
+        // il controller viene ricreato automaticamente alla prossima apertura.
+        if (isFinishing && !isChangingConfigurations && !handedOverToTv) {
+            playerController.releaseController()
+        }
+        super.onDestroy()
     }
 
     private fun initAppLocaleAndWidgets() {

@@ -398,19 +398,6 @@ class RecordingPlaybackControllerTest {
             _bufferLevel = level
         }
 
-        // Station volumes
-        private val stationVolumes = mutableMapOf<String, Float>()
-        override suspend fun getStationVolume(stationUuid: String, deviceId: String): Float? {
-            return stationVolumes["$stationUuid:$deviceId"]
-        }
-        override suspend fun setStationVolume(stationUuid: String, deviceId: String, volume: Float) {
-            stationVolumes["$stationUuid:$deviceId"] = volume
-        }
-        override suspend fun clearStationVolume(stationUuid: String, deviceId: String) {
-            stationVolumes.remove("$stationUuid:$deviceId")
-        }
-        override suspend fun getSavedStationVolumes(): Map<String, Float> = stationVolumes.toMap()
-
         // Pure Black
         private var _pureBlackEnabled = false
         override suspend fun setPureBlackEnabled(enabled: Boolean) {

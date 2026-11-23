@@ -24,6 +24,13 @@ class SvgProxyProvider : ContentProvider() {
     override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor? {
         val urlBase64 = uri.lastPathSegment ?: return null
         val originalUrl = String(Base64.decode(urlBase64, Base64.URL_SAFE))
+        // Il provider è esposto (serve a Coil e alle notifiche): accetta solo URL http/https,
+        // così non può essere usato per accedere ad altri schemi.
+        if (!originalUrl.startsWith("http://", ignoreCase = true) &&
+            !originalUrl.startsWith("https://", ignoreCase = true)
+        ) {
+            return null
+        }
 
         val pipe = ParcelFileDescriptor.createReliablePipe()
         val readSide = pipe[0]

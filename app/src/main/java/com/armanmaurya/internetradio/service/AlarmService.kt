@@ -55,6 +55,7 @@ class AlarmService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var autoSilenceJob: Job? = null
     private var playbackObserverJob: Job? = null
+    private var playbackTimeoutJob: Job? = null
     private var activeScheduleId: Int = -1
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -170,12 +171,25 @@ class AlarmService : Service() {
                 }
             }
         }
+
+        // Watchdog: se lo stream non parte (URL morto, rete assente) il foreground service
+        // resterebbe attivo per sempre. Dopo il timeout chiudiamo l'allarme.
+        playbackTimeoutJob?.cancel()
+        playbackTimeoutJob = serviceScope.launch {
+            delay(PLAYBACK_START_TIMEOUT_MS)
+            if (playerController.playbackSession.value.isPlaying.not()) {
+                Log.w("AlarmService", "Playback did not start within ${PLAYBACK_START_TIMEOUT_MS}ms, dismissing alarm")
+                dismissAlarm()
+            }
+        }
     }
 
     private fun dismissAlarm(stopPlayback: Boolean = true) {
         autoSilenceJob?.cancel()
         autoSilenceJob = null
         playbackObserverJob?.cancel()
+        playbackTimeoutJob?.cancel()
+        playbackTimeoutJob = null
         AlarmWakeLockBridge.release()
 
         if (activeScheduleId != -1) {
@@ -307,6 +321,7 @@ class AlarmService : Service() {
         const val EXTRA_SCHEDULE_ID = "extra_schedule_id"
         const val EXTRA_STOP_PLAYBACK = "extra_stop_playback"
         const val DEFAULT_SNOOZE_MINUTES = 10
+        private const val PLAYBACK_START_TIMEOUT_MS = 90_000L
         const val AUTO_SILENCE_DURATION_MS = 15 * 60 * 1000L // 15 minutes
     }
 }

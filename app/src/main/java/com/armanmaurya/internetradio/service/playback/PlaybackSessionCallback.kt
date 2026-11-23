@@ -36,7 +36,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import javax.inject.Inject
@@ -66,8 +65,21 @@ class PlaybackSessionCallback @Inject constructor(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // Snapshot in memoria dello stato che serve ai callback sincroni di Media3 (main thread).
+    // Evita di fare query al database con runBlocking dentro onConnect/getLocalizedString.
+    @Volatile private var libraryStationIds: Set<String> = emptySet()
+    @Volatile private var appLanguage: String = "System"
+
     init {
         autoBrowseTreeProvider.observeSettingsChanges { activeSession }
+        scope.launch {
+            libraryRepository.getAllStations().collect { stations ->
+                libraryStationIds = stations.map { it.stationUuid }.toSet()
+            }
+        }
+        scope.launch {
+            settingsRepository.appPreferencesFlow.collect { appLanguage = it.appLanguage }
+        }
     }
 
 
@@ -77,9 +89,7 @@ class PlaybackSessionCallback @Inject constructor(
         controller: MediaSession.ControllerInfo,
     ): MediaSession.ConnectionResult {
         val currentStation = session.player.currentMediaItem?.localConfiguration?.tag as? RadioStation
-        val isFav = currentStation?.let {
-            runBlocking { libraryRepository.isStationInLibraryDirect(it.stationUuid) }
-        } ?: false
+        val isFav = currentStation?.let { it.stationUuid in libraryStationIds } ?: false
 
         val sessionCommands = MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS
             .buildUpon()
@@ -243,12 +253,22 @@ class PlaybackSessionCallback @Inject constructor(
         controller: MediaSession.ControllerInfo,
         mediaItems: List<MediaItem>,
     ): ListenableFuture<List<MediaItem>> {
-        val resolved = mediaItems.map { item ->
-            if (item.localConfiguration?.uri != null) return@map item
-            val station = autoBrowseTreeProvider.findStationByUuid(item.mediaId.substringAfter("|")) ?: return@map item
-            station.toMediaItem(context)
+        // La risoluzione richiede il database: niente runBlocking sul main thread.
+        val future = SettableFuture.create<List<MediaItem>>()
+        scope.launch {
+            try {
+                val resolved = mediaItems.map { item ->
+                    if (item.localConfiguration?.uri != null) return@map item
+                    val station = autoBrowseTreeProvider.findStationByUuid(item.mediaId.substringAfter("|"))
+                        ?: return@map item
+                    station.toMediaItem(context)
+                }
+                future.set(resolved)
+            } catch (e: Exception) {
+                future.setException(e)
+            }
         }
-        return Futures.immediateFuture(resolved)
+        return future
     }
 
     @OptIn(UnstableApi::class)
@@ -317,7 +337,7 @@ class PlaybackSessionCallback @Inject constructor(
     }
 
     private fun getLocalizedString(@StringRes resId: Int): String {
-        val language = runBlocking { settingsRepository.getSavedAppLanguage() } ?: "System"
+        val language = appLanguage
         val locale = if (language == "System" || language.isEmpty()) {
             Locale.getDefault()
         } else {

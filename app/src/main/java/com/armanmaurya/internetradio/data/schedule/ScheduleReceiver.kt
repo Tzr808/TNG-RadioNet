@@ -16,6 +16,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -36,8 +37,6 @@ class ScheduleReceiver : BroadcastReceiver() {
 
     @Inject
     lateinit var recordingController: RecordingController
-
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
@@ -123,6 +122,9 @@ class ScheduleReceiver : BroadcastReceiver() {
 
         // Handle recording, playback end time, and rescheduling in background using goAsync
         val pendingResult = goAsync()
+        // Scope legato a questa singola ricezione: viene cancellato appena il lavoro termina,
+        // così non restano coroutine/scope attaccati al receiver.
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         scope.launch {
             try {
                 val schedule = scheduleRepository.getScheduleById(scheduleId)
@@ -161,6 +163,7 @@ class ScheduleReceiver : BroadcastReceiver() {
                         wakeLock.release()
                     }
                 } catch (_: Exception) {}
+                scope.cancel()
                 pendingResult.finish()
             }
         }

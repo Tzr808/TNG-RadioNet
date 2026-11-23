@@ -47,6 +47,12 @@ class RecordingService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
+            // Restart con intent nullo (servizio ricreato dal sistema): non possiamo chiamare
+            // startForeground() senza sapere quale stazione registrare, quindi chiudiamo subito.
+            null -> {
+                stopSelf()
+                return START_NOT_STICKY
+            }
             ACTION_START -> {
                 val stationJson = intent.getStringExtra("STATION_JSON")
                 val station = if (stationJson != null) {
@@ -58,7 +64,11 @@ class RecordingService : Service() {
                 observeSessions()
             }
             ACTION_STOP -> {
-                val uuid = intent.getStringExtra("UUID") ?: return START_STICKY
+                val uuid = intent.getStringExtra("UUID")
+                if (uuid == null) {
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
                 recordingController.stopRecording(uuid)
                 if (recordingController.activeSessions.value.isEmpty()) stopSelf()
             }

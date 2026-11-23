@@ -68,8 +68,6 @@
     <string name="settings_custom_color_title">Custom Color</string>
     <string name="settings_custom_color_apply">Apply</string>
     <string name="settings_custom_color_cancel">Cancel</string>
-    <string name="settings_pure_black_title">Pure Black</string>
-    <string name="settings_pure_black_desc">Use pure black background in dark mode</string>
     <string name="settings_show_station_thumbnails">Show station thumbnails</string>
     <string name="settings_show_station_thumbnails_desc">Station logos in lists and player</string>
     <string name="settings_general_section">General</string>
@@ -623,32 +621,4 @@
     <string name="recording_folder_access_grant">Grant access</string>
     <string name="recording_folder_access_wrong_folder">Please select the Music/InternetRadio folder</string>
 
-    <!-- ========================================== -->
-    <!-- Buffer Level Settings                      -->
-    <!-- ========================================== -->
-    <string name="settings_buffer_level">Buffer Level</string>
-    <string name="settings_buffer_standard">Standard (Default)</string>
-    <string name="settings_buffer_high">High (120s max)</string>
-
-    <!-- ========================================== -->
-    <!-- Station Volume (per-stazione + dispositivo) -->
-    <!-- ========================================== -->
-    <string name="player_volume">Volume</string>
-    <string name="player_volume_station_label">Volume per stazione</string>
-    <string name="player_volume_device_label">Dispositivi</string>
-    <string name="player_volume_save">Salva volume</string>
-    <string name="player_volume_clear_label">Cancella volume salvato</string>
-    <string name="player_volume_saved">Volume salvato per questa stazione</string>
-    <string name="player_volume_cleared">Volume salvato cancellato</string>
-    <string name="player_volume_active_device">Attivo</string>
-    <string name="player_cd_station_volume">Volume per stazione</string>
-
-    <!-- ========================================== -->
-    <!-- TNG RadioNet branding (placeholder, overridden by tng flavor) -->
-    <!-- ========================================== -->
-    <string name="tng_about_version_format">ver. %1$s</string>
-    <string name="tng_about_based_on">Based on original app Internet Radio by</string>
-    <string name="tng_about_author">Arman Maurya</string>
-    <string name="tng_about_available_on">available on</string>
-    <string name="tng_about_github">GitHub</string>
 </resources>

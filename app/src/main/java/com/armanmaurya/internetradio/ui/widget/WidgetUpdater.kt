@@ -10,7 +10,9 @@ import com.armanmaurya.internetradio.domain.repository.RecentRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -30,17 +32,20 @@ class WidgetUpdater @Inject constructor(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var attachedPlayer: Player? = null
+    private var pendingUpdateJob: Job? = null
 
     fun attachPlayer(player: Player) {
         attachedPlayer?.removeListener(this)
         attachedPlayer = player
         player.addListener(this)
-        updateWidget(player)
+        pushWidget(player)
     }
 
     fun detachPlayer() {
         attachedPlayer?.removeListener(this)
         attachedPlayer = null
+        pendingUpdateJob?.cancel()
+        pendingUpdateJob = null
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -68,11 +73,22 @@ class WidgetUpdater @Inject constructor(
     }
 
     /**
-     * Reads current playback metadata and pushes it to the widget via WidgetController.
+     * Schedules a widget update. Player events arrive in bursts (buffering → playing → metadata),
+     * so the update is debounced to avoid rewriting the Glance widget several times per second.
      */
     fun updateWidget(player: Player? = attachedPlayer) {
         val p = player ?: return
+        pendingUpdateJob?.cancel()
+        pendingUpdateJob = scope.launch {
+            delay(WIDGET_UPDATE_DEBOUNCE_MS)
+            pushWidget(p)
+        }
+    }
 
+    /**
+     * Reads current playback metadata and pushes it to the widget via WidgetController.
+     */
+    private fun pushWidget(p: Player) {
         val metadata = p.currentMediaItem?.mediaMetadata
         val isPlaying =
             p.isPlaying || (p.playbackState == Player.STATE_BUFFERING && p.playWhenReady)
@@ -129,6 +145,8 @@ class WidgetUpdater @Inject constructor(
      * Clears cached payloads and updates with last-played station.
      */
     fun pushStoppedWidgetUpdate() {
+        pendingUpdateJob?.cancel()
+        pendingUpdateJob = null
         scope.launch(Dispatchers.IO) {
             widgetController.clearLatestPayload()
             val lastStation = recentRepository.getAllRecent().first().firstOrNull()
@@ -179,6 +197,8 @@ class WidgetUpdater @Inject constructor(
     }
 
     companion object {
+        private const val WIDGET_UPDATE_DEBOUNCE_MS = 300L
+
         const val ACTION_WIDGET_PLAY_PAUSE = "com.armanmaurya.internetradio.ACTION_WIDGET_PLAY_PAUSE"
         const val ACTION_WIDGET_NEXT = "com.armanmaurya.internetradio.ACTION_WIDGET_NEXT"
         const val ACTION_WIDGET_PREVIOUS = "com.armanmaurya.internetradio.ACTION_WIDGET_PREVIOUS"

@@ -232,18 +232,11 @@ class SettingsViewModel @Inject constructor(
 
     /**
      * Abilita/disabilita il toggle Pure Black.
-     * Quando attivato in modalità scura, forza il tema DARK per garantire
-     * l'effetto visivo dello sfondo nero puro.
+     * Non tocca il tema scelto dall'utente: lo sfondo nero puro si applica solo quando il tema
+     * effettivo è scuro (vedi Theme.kt).
      */
     fun setPureBlackEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            if (enabled) {
-                // Assicuriamoci che il tema sia in DARK mode
-                // altrimenti il toggle non avrebbe effetto visivo
-                if (uiState.value.themeMode != AppTheme.DARK) {
-                    settingsRepository.setThemeMode(AppTheme.DARK)
-                }
-            }
             settingsRepository.setPureBlackEnabled(enabled)
         }
     }

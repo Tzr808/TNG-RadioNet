@@ -542,7 +542,6 @@ class PlayerViewModel @Inject constructor(
             selectedLyricsProviderId = extra.selectedProviderId,
             customLyricsQueryTitle = extra.customQuery?.trackTitle,
             customLyricsQueryArtist = extra.customQuery?.artistName,
-            activeDeviceId = if (isCasting) cast.connectedDevice?.name ?: cast.connectedDevice?.id else getActiveDeviceId()
         )
     }.stateIn(
         scope = viewModelScope,
@@ -770,6 +769,11 @@ class PlayerViewModel @Inject constructor(
         setSleepTimerUseCase.cancel()
     }
 
+    /** Avvia la ricerca dei dispositivi Cast (solo quando l'utente apre il dialog). */
+    fun startCastDiscovery() {
+        castController.startDiscovery()
+    }
+
     fun connectToCastDevice(device: CastDevice) {
         connectCastDeviceUseCase(device)
         playerController.setVolume(0f)
@@ -872,55 +876,20 @@ class PlayerViewModel @Inject constructor(
     }
 
     // ── Station volumes (per-stazione + dispositivo) ──
+    // Unica fonte di verità: StationVolumeManager (volume del flusso musica per stazione+dispositivo).
 
-    /** Volumi salvati per stazione+dispositivo, esposti come StateFlow. */
-    val savedStationVolumes: kotlinx.coroutines.flow.StateFlow<Map<String, Float>> = settingsRepository.appPreferencesFlow
-        .map { it.stationVolumes }
-        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), emptyMap())
+    /** Etichetta del dispositivo di uscita attivo (per la UI). */
+    fun getActiveAudioDeviceName(): String = stationVolumeManager.getActiveDeviceName()
 
-    /** Recupera il volume salvato per la stazione corrente e il dispositivo attivo. */
-    fun getVolumeForCurrentStation(): Float? {
-        val station = playbackSession.value.currentStation ?: return null
-        val deviceId = getActiveDeviceId()
-        return savedStationVolumes.value["$station.stationUuid:$deviceId"]
-    }
+    /** Volume corrente del dispositivo, normalizzato 0..1 (per lo slider del dialog). */
+    fun getDeviceVolumeFraction(): Float = stationVolumeManager.getVolumeFraction()
 
-    /** Salva il volume corrente del telefono per la stazione corrente e il dispositivo attivo. */
-    suspend fun saveCurrentVolumeForCurrentStation() {
-        val station = playbackSession.value.currentStation ?: return
-        val deviceId = getActiveDeviceId()
-        val currentVolume = playbackSession.value.volume
-        settingsRepository.setStationVolume(station.stationUuid, deviceId, currentVolume)
-    }
+    /** Applica subito il volume al dispositivo (usato dallo slider del dialog). */
+    fun setDeviceVolumeFraction(fraction: Float) = stationVolumeManager.setVolumeFraction(fraction)
 
-    /** Cancella il volume salvato per la stazione corrente e il dispositivo attivo. */
-    suspend fun clearVolumeForCurrentStation() {
-        val station = playbackSession.value.currentStation ?: return
-        val deviceId = getActiveDeviceId()
-        settingsRepository.clearStationVolume(station.stationUuid, deviceId)
-    }
-
-    /** Verifica se esiste un volume salvato per la combinazione stazione+dispositivo corrente. */
-    fun hasSavedVolumeForCurrentStation(): Boolean {
-        val station = playbackSession.value.currentStation ?: return false
-        val deviceId = getActiveDeviceId()
-        return savedStationVolumes.value.containsKey("$station.stationUuid:$deviceId")
-    }
-
-    /** Recupera l'ID del dispositivo audio attivo corrente. */
-    private fun getActiveDeviceId(): String {
-        try {
-            val audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
-            val devices = audioManager.getDevices(android.media.AudioManager.GET_DEVICES_ALL)
-            // Cerca il dispositivo attivo: casse integrate, Bluetooth, USB, ecc.
-            val activeDevice = devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
-                ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }
-                ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET }
-                ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_USB_DEVICE }
-                ?: devices.firstOrNull()
-            return activeDevice?.id?.toString() ?: "default"
-        } catch (e: Exception) {
-            return "default"
-        }
+    /** Rilascia il callback audio registrato da StationVolumeManager (evita leak e lavoro in background). */
+    override fun onCleared() {
+        stationVolumeManager.release()
+        super.onCleared()
     }
 }

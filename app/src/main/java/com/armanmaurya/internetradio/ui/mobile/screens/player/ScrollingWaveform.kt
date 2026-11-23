@@ -48,14 +48,16 @@ fun ScrollingWaveform(
         
         val amplitudes = remember { mutableStateListOf<Float>() }
 
-        // Update the list at a fixed framerate for smooth scrolling
+        // Update the list at a fixed framerate for smooth scrolling.
+        // At 30 FPS only while there is actual audio: when paused/silent the waveform looks
+        // frozen, so a slow tick is enough and avoids burning CPU for nothing.
         LaunchedEffect(Unit) {
             while (true) {
                 amplitudes.add(animatedAmplitude)
                 while (amplitudes.size > maxBarsState.value) {
                     amplitudes.removeAt(0)
                 }
-                delay(33) // ~30 FPS
+                delay(if (animatedAmplitude > 0.002f) 33L else 250L) // ~30 FPS / ~4 FPS
             }
         }
 

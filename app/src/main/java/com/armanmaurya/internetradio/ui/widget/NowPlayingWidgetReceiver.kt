@@ -34,6 +34,8 @@ class NowPlayingWidgetReceiver : GlanceAppWidgetReceiver() {
         if (PlaybackService.isRunning) {
             entryPoint?.widgetUpdater()?.updateWidget()
         } else {
+            // goAsync(): il sistema tiene in vita il receiver finché finiamo il lavoro
+            val pendingResult = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val lastStation = entryPoint?.recentRepository()?.getAllRecent()?.first()?.firstOrNull()
@@ -44,6 +46,8 @@ class NowPlayingWidgetReceiver : GlanceAppWidgetReceiver() {
                     )
                 } catch (e: Exception) {
                     entryPoint?.widgetController()?.cleanStaleWidgetState()
+                } finally {
+                    pendingResult.finish()
                 }
             }
         }

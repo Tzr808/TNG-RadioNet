@@ -53,8 +53,6 @@ data class AppPreferences(
     val enabledLyricsProviders: Set<String> = setOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib"),
     /** Livello di buffer per l'ExoPlayer (STANDARD o HIGH). */
     val bufferLevel: BufferLevel = BufferLevel.STANDARD,
-    /** Volumi salvati per stazione+dispositivo. Chiave: "stationUuid:deviceId". */
-    val stationVolumes: Map<String, Float> = emptyMap(),
     /** Quando attivo in modalità scura, applica uno sfondo nero puro a tutto il tema. */
     val isPureBlackEnabled: Boolean = false
 )

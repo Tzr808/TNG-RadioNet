@@ -4,8 +4,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 
@@ -27,9 +29,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.VolumeDown
-import androidx.compose.material.icons.filled.VolumeOff
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeDown
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -44,10 +46,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,14 +62,17 @@ import com.armanmaurya.internetradio.R
 /** Chiave per il dialog volume-stazione. */
 internal const val STATION_VOLUME_DIALOG_KEY = "station_volume_dialog"
 
-/** Pulsante toggle volume per-stazione. */
+/**
+ * Pulsante toggle volume per-stazione: tap = salva il volume, long-press = cancella quello salvato.
+ * Quando un volume è salvato mostra l'icona in evidenza e un arco verde di conferma.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun StationVolumeButton(
     modifier: Modifier = Modifier,
     hasSavedVolume: Boolean,
     onToggleClick: () -> Unit,
-    onLongClick: () -> Unit,
-    stationName: String? = null
+    onLongClick: () -> Unit
 ) {
     val contentColor = if (hasSavedVolume) {
         MaterialTheme.colorScheme.primary
@@ -81,23 +88,47 @@ fun StationVolumeButton(
 
     Box(
         modifier = modifier
-            .clip(MaterialTheme.shapes.small)
+            .clip(MaterialTheme.shapes.medium)
             .background(containerColor)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = { _ -> onToggleClick() },
-                    onLongPress = { _ -> onLongClick() }
-                )
-            }
-            .padding(8.dp),
+            .combinedClickable(onClick = onToggleClick, onLongClick = onLongClick),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = if (hasSavedVolume) Icons.Default.VolumeUp else Icons.Default.VolumeDown,
-            contentDescription = null,
-            tint = contentColor,
-            modifier = Modifier.size(24.dp)
-        )
+        Box(
+            modifier = Modifier.size(28.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (hasSavedVolume) {
+                    Icons.AutoMirrored.Filled.VolumeUp
+                } else {
+                    Icons.AutoMirrored.Filled.VolumeDown
+                },
+                contentDescription = stringResource(R.string.player_cd_station_volume),
+                tint = contentColor,
+                modifier = Modifier
+                    .size(28.dp)
+                    .graphicsLayer { scaleX = -1f }
+            )
+            if (hasSavedVolume) {
+                Canvas(modifier = Modifier.size(28.dp)) {
+                    val arcRadius = size.width * 0.35f
+                    val centerX = size.width / 2f
+                    val centerY = size.height / 2f
+                    val startX = centerX - arcRadius
+                    val startY = centerY - arcRadius
+                    val path = Path().apply {
+                        moveTo(startX + arcRadius, startY + arcRadius * 0.5f)
+                        arcTo(
+                            rect = Rect(startX, startY, startX + arcRadius * 2f, startY + arcRadius * 2f),
+                            startAngleDegrees = -45f,
+                            sweepAngleDegrees = 90f,
+                            forceMoveTo = false
+                        )
+                    }
+                    drawPath(path = path, color = Color(0xFF4CAF50), style = Stroke(width = 2.5f))
+                }
+            }
+        }
     }
 }
 
@@ -234,7 +265,7 @@ fun StationVolumeDialog(
                         )
                     ) {
                         Icon(
-                            imageVector = Icons.Default.VolumeUp,
+                            imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                             contentDescription = stringResource(R.string.player_volume_save),
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -265,7 +296,7 @@ fun StationVolumeDialog(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.VolumeUp,
+                                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp)
@@ -289,7 +320,7 @@ fun StationVolumeDialog(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.VolumeOff,
+                                    imageVector = Icons.AutoMirrored.Filled.VolumeOff,
                                     contentDescription = null,
                                     tint = if (isActive) {
                                         MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)

@@ -11,35 +11,31 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import kotlin.math.roundToInt
 
 /**
- * Gestisce il salvataggio e il ripristino del volume per stazione radio + dispositivo di output.
- * 
- * Funzionamento:
- * - Quando l'utente seleziona una stazione, salva il volume corrente associato a quella stazione
- *   e al dispositivo attivo (Bluetooth, USB, cuffie, altoparlante).
- * - Quando cambia la stazione o il dispositivo, ripristina automaticamente il volume salvato.
- * - Long-press sul pulsante per cancellare il volume salvato.
- * 
- * Migliorie rispetto alla versione base:
- * 1. Verifica che il dispositivo sia EFFETTIVAMENTE attivo (non solo connesso)
- * 2. Debounce sul callback audio per evitare riapplicazioni multiple
- * 3. Gestione sicura dei permessi BLUETOOTH_CONNECT su Android 12+
+ * Unica fonte di verità per il volume "per stazione + dispositivo di uscita".
+ *
+ * - Salva il volume del flusso musica (AudioManager) associato alla stazione corrente e al
+ *   dispositivo di uscita attivo, con chiave stabile basata su tipo+indirizzo del dispositivo.
+ * - Quando l'utente cambia stazione o collega/scollega un dispositivo, riapplica il volume salvato.
+ * - Long-press sul pulsante cancella il volume salvato.
+ *
+ * Nota: la chiave NON usa il nome commerciale del dispositivo, che può cambiare ed è
+ * disponibile solo con il permesso BLUETOOTH_CONNECT su Android 12+.
  */
 class StationVolumeManager(
     private val context: Context,
     private val onStateChanged: ((hasSavedVolume: Boolean) -> Unit)? = null
 ) {
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val prefs = context.getSharedPreferences("station_device_volumes", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private var currentStationId: String? = null
-    private var currentStationName: String? = null
 
     // Debounce: evita di riapplicare il volume più volte in rapida successione
     private val handler = Handler(Looper.getMainLooper())
     private var pendingReapply: Runnable? = null
-    private val DEBOUNCE_MS = 300L
 
     private val deviceCallback = object : AudioDeviceCallback() {
         override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
@@ -59,10 +55,35 @@ class StationVolumeManager(
      * Segnala al manager quale stazione è attualmente selezionata.
      * Questo attiva il ripristino del volume salvato per quella stazione.
      */
-    fun onStationSelected(stationId: String, stationName: String) {
+    fun onStationSelected(stationId: String, @Suppress("UNUSED_PARAMETER") stationName: String) {
         currentStationId = stationId
-        currentStationName = stationName
         reapplyForCurrentStation()
+    }
+
+    /** True se esiste un volume salvato per la stazione e il dispositivo correnti. */
+    fun hasSavedVolumeForCurrentStation(): Boolean {
+        val id = currentStationId ?: return false
+        return prefs.contains(buildKey(id, activeDeviceKey()))
+    }
+
+    /** Nome leggibile del dispositivo di uscita attivo (solo per la UI). */
+    fun getActiveDeviceName(): String {
+        val device = activeOutputDevice() ?: return SPEAKER_LABEL
+        return deviceDisplayName(device)
+    }
+
+    /** Volume corrente del flusso musica, normalizzato 0..1 (per lo slider del dialog). */
+    fun getVolumeFraction(): Float {
+        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        if (maxVolume <= 0) return 0f
+        return audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / maxVolume
+    }
+
+    /** Applica subito al dispositivo un volume normalizzato 0..1. */
+    fun setVolumeFraction(fraction: Float) {
+        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        if (maxVolume <= 0) return
+        applyStreamVolume((fraction.coerceIn(0f, 1f) * maxVolume).roundToInt())
     }
 
     /**
@@ -70,25 +91,18 @@ class StationVolumeManager(
      */
     fun saveCurrentVolume() {
         val id = currentStationId ?: return
-        val deviceName = getActiveOutputDeviceName()
-        val currentVol = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-        val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        val volumePercent = if (maxVol > 0) "${(currentVol.toFloat() / maxVol * 100).toInt()}%" else "$currentVol"
+        val deviceLabel = getActiveDeviceName()
+        val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        val percent = if (maxVolume > 0) "${(currentVolume.toFloat() / maxVolume * 100).toInt()}%" else "$currentVolume"
 
-        prefs.edit().putInt(buildKey(id, deviceName), currentVol).apply()
-
+        prefs.edit().putInt(buildKey(id, activeDeviceKey()), currentVolume).apply()
         onStateChanged?.invoke(true)
-        
-        val message = if (deviceName.startsWith("Dispositivo_") || deviceName == "Altoparlante Telefono") {
-            "Volume salvato ($volumePercent) per $deviceName\n(Il nome reale non è disponibile)"
-        } else {
-            "Volume salvato ($volumePercent) su $deviceName"
-        }
-        
+
         Toast.makeText(
             context,
-            message,
-            Toast.LENGTH_LONG
+            "Volume salvato ($percent) su $deviceLabel",
+            Toast.LENGTH_SHORT
         ).show()
     }
 
@@ -97,22 +111,15 @@ class StationVolumeManager(
      */
     fun clearSavedVolume() {
         val id = currentStationId ?: return
-        val deviceName = getActiveOutputDeviceName()
+        val deviceLabel = getActiveDeviceName()
 
-        prefs.edit().remove(buildKey(id, deviceName)).apply()
-
+        prefs.edit().remove(buildKey(id, activeDeviceKey())).apply()
         onStateChanged?.invoke(false)
-        
-        val message = if (deviceName.startsWith("Dispositivo_") || deviceName == "Altoparlante Telefono") {
-            "Volume rimosso per $deviceName\n(Il nome reale non è disponibile)"
-        } else {
-            "Volume personalizzato rimosso da $deviceName"
-        }
-        
+
         Toast.makeText(
             context,
-            message,
-            Toast.LENGTH_LONG
+            "Volume personalizzato rimosso da $deviceLabel",
+            Toast.LENGTH_SHORT
         ).show()
     }
 
@@ -122,25 +129,18 @@ class StationVolumeManager(
      */
     private fun reapplyForCurrentStation() {
         val id = currentStationId ?: return
-        val deviceName = getActiveOutputDeviceName()
-        val key = buildKey(id, deviceName)
+        val key = buildKey(id, activeDeviceKey())
+        val savedVolume = prefs.getInt(key, -1)
+        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
 
-        if (prefs.contains(key)) {
-            val savedVol = prefs.getInt(key, -1)
-            val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-            if (savedVol in 0..maxVol) {
-                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, savedVol, 0)
-            }
+        if (savedVolume in 0..maxVolume) {
+            applyStreamVolume(savedVolume)
             onStateChanged?.invoke(true)
         } else {
             onStateChanged?.invoke(false)
         }
     }
 
-    /**
-     * Pianifica un riapplico del volume con debounce.
-     * Se viene chiamata più volte entro DEBOUNCE_MS, solo l'ultima esecuzione viene mantenuta.
-     */
     private fun scheduleReapply() {
         pendingReapply?.let { handler.removeCallbacks(it) }
         val reapplyRunnable = Runnable { reapplyForCurrentStation() }
@@ -148,84 +148,104 @@ class StationVolumeManager(
         handler.postDelayed(reapplyRunnable, DEBOUNCE_MS)
     }
 
-    /**
-     * Restituisce il nome del dispositivo di output ATTIVO (non solo connesso).
-     * 
-     * Logica:
-     * 1. Cerca dispositivi di output esterni (Bluetooth, USB, cuffie)
-     * 2. Verifica che siano effettivamente in uso (non solo connessi)
-     * 3. Su Android 12+ legge il nome reale solo se il permesso BLUETOOTH_CONNECT è concesso
-     * 4. Fallback su un nome generico se il permesso è negato o il nome non disponibile
-     */
-    private fun getActiveOutputDeviceName(): String {
-        val outputs = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-
-        // Ordina per priorità: cuffie cablate > USB > Bluetooth A2DP > Bluetooth headset > altoparlante
-        val externalDevice = outputs.firstOrNull { device ->
-            device.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
-            device.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
-            device.type == AudioDeviceInfo.TYPE_USB_HEADSET ||
-            device.type == AudioDeviceInfo.TYPE_USB_DEVICE ||
-            device.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
-            device.type == AudioDeviceInfo.TYPE_BLE_HEADSET
+    private fun applyStreamVolume(volume: Int) {
+        try {
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0)
+        } catch (_: SecurityException) {
+            // Alcune ROM / la modalità Non Disturbare bloccano il cambio volume: non crashare
+        } catch (_: Exception) {
+            // Difensivo: un errore audio non deve mai far cadere l'app
         }
-
-        if (externalDevice != null) {
-            val canReadBtName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.BLUETOOTH_CONNECT
-                ) == PackageManager.PERMISSION_GRANTED
-            } else {
-                true
-            }
-
-            val name = if (canReadBtName) {
-                externalDevice.productName?.toString()?.trim()
-            } else {
-                null
-            }
-            return if (!name.isNullOrEmpty()) name else "Dispositivo_${externalDevice.type}"
-        }
-
-        return "Altoparlante Telefono"
     }
+
+    /** Dispositivo di uscita realmente attivo, scelto per priorità esplicita. */
+    private fun activeOutputDevice(): AudioDeviceInfo? {
+        val outputs = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+        return outputs
+            .filter { isSupportedOutput(it.type) }
+            .minByOrNull { typePriority(it.type) }
+            ?.takeIf { typePriority(it.type) < PRIORITY_BUILTIN_SPEAKER }
+    }
+
+    private fun isSupportedOutput(type: Int): Boolean = when (type) {
+        AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
+        AudioDeviceInfo.TYPE_WIRED_HEADSET,
+        AudioDeviceInfo.TYPE_USB_HEADSET,
+        AudioDeviceInfo.TYPE_USB_DEVICE,
+        AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+        AudioDeviceInfo.TYPE_BLE_HEADSET,
+        AudioDeviceInfo.TYPE_BUILTIN_EARPIECE,
+        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> true
+        else -> false
+    }
+
+    private fun typePriority(type: Int): Int = when (type) {
+        AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET -> 0
+        AudioDeviceInfo.TYPE_USB_HEADSET, AudioDeviceInfo.TYPE_USB_DEVICE -> 1
+        AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, AudioDeviceInfo.TYPE_BLE_HEADSET -> 2
+        AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> 5
+        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> PRIORITY_BUILTIN_SPEAKER
+        else -> 9
+    }
+
+    /**
+     * Chiave stabile per dispositivo: usa l'indirizzo hardware quando disponibile,
+     * altrimenti il nome; se non c'è nulla di stabile, solo il tipo.
+     */
+    private fun activeDeviceKey(): String {
+        val device = activeOutputDevice() ?: return SPEAKER_KEY
+        val address = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            device.address.orEmpty()
+        } else {
+            ""
+        }
+        val stablePart = address.ifBlank { device.productName?.toString()?.trim().orEmpty() }
+        return if (stablePart.isBlank()) "type_${device.type}" else "type_${device.type}_$stablePart"
+    }
+
+    private fun deviceDisplayName(device: AudioDeviceInfo): String {
+        val canReadName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+        val name = if (canReadName) device.productName?.toString()?.trim() else null
+        if (!name.isNullOrEmpty()) return name
+
+        return when (device.type) {
+            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+            AudioDeviceInfo.TYPE_BLE_HEADSET -> "Bluetooth"
+            AudioDeviceInfo.TYPE_USB_HEADSET,
+            AudioDeviceInfo.TYPE_USB_DEVICE -> "USB Audio"
+            AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
+            AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Cuffie"
+            AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> "Auricolare"
+            else -> SPEAKER_LABEL
+        }
+    }
+
+    private fun buildKey(stationId: String, deviceKey: String): String = "vol_${stationId}_$deviceKey"
 
     /**
      * Restituisce il TIPO del dispositivo attivo (senza bisogno di permessi).
      * Utile per decidere se chiedere BLUETOOTH_CONNECT.
      */
     fun getActiveDeviceType(): String {
-        val outputs = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-
-        val externalDevice = outputs.firstOrNull { device ->
-            device.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
-            device.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
-            device.type == AudioDeviceInfo.TYPE_USB_HEADSET ||
-            device.type == AudioDeviceInfo.TYPE_USB_DEVICE ||
-            device.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
-            device.type == AudioDeviceInfo.TYPE_BLE_HEADSET
+        val device = activeOutputDevice() ?: return "speaker"
+        return when (device.type) {
+            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "bluetooth"
+            AudioDeviceInfo.TYPE_BLE_HEADSET -> "ble_bluetooth"
+            AudioDeviceInfo.TYPE_USB_HEADSET, AudioDeviceInfo.TYPE_USB_DEVICE -> "usb"
+            AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET -> "wired"
+            else -> "external_${device.type}"
         }
-
-        return if (externalDevice != null) {
-            when (externalDevice.type) {
-                AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "bluetooth"
-                AudioDeviceInfo.TYPE_BLE_HEADSET -> "ble_bluetooth"
-                AudioDeviceInfo.TYPE_USB_HEADSET, AudioDeviceInfo.TYPE_USB_DEVICE -> "usb"
-                AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET -> "wired"
-                else -> "external_${externalDevice.type}"
-            }
-        } else {
-            "speaker"
-        }
-    }
-
-    private fun buildKey(stationId: String, deviceName: String): String {
-        return "vol_${stationId}_$deviceName"
     }
 
     /**
-     * Deve essere chiamato quando il manager non è più necessario (es. onDestroy).
+     * Deve essere chiamato quando il manager non è più necessario (es. onCleared del ViewModel).
      */
     fun release() {
         handler.removeCallbacksAndMessages(null)
@@ -235,5 +255,13 @@ class StationVolumeManager(
         } catch (_: IllegalArgumentException) {
             // Callback già disregistrato, ignora
         }
+    }
+
+    private companion object {
+        const val PREFS_NAME = "station_device_volumes"
+        const val DEBOUNCE_MS = 300L
+        const val SPEAKER_KEY = "speaker"
+        const val SPEAKER_LABEL = "Altoparlante Telefono"
+        const val PRIORITY_BUILTIN_SPEAKER = 10
     }
 }

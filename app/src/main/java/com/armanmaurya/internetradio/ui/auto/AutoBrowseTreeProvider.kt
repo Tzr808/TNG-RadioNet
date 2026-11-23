@@ -24,6 +24,7 @@ import com.armanmaurya.internetradio.service.playback.toMediaItem
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.SettableFuture
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,7 +32,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import javax.inject.Inject
@@ -61,6 +61,15 @@ class AutoBrowseTreeProvider @Inject constructor(
 ) {
     private val searchScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @Volatile private var searchResultsCache: Map<String, List<RadioStation>> = emptyMap()
+    // Lingua salvata in cache: getLocalizedString() è chiamato dai callback Media3 sul main
+    // thread, dove runBlocking bloccherebbe la UI.
+    @Volatile private var appLanguage: String = "System"
+
+    init {
+        searchScope.launch {
+            settingsRepository.appPreferencesFlow.collect { appLanguage = it.appLanguage }
+        }
+    }
 
     fun observeSettingsChanges(activeSessionProvider: () -> MediaLibrarySession?) {
         searchScope.launch {
@@ -80,7 +89,7 @@ class AutoBrowseTreeProvider @Inject constructor(
     fun onGetLibraryRoot(params: LibraryParams?): ListenableFuture<LibraryResult<MediaItem>> {
         val isSuggested = params?.isSuggested == true
         val rootId = if (isSuggested) AutoBrowseTree.LIBRARY else AutoBrowseTree.ROOT
-        val rootTitle = if (isSuggested) getLocalizedString(R.string.auto_for_you) else getLocalizedString(R.string.app_name)
+        val rootTitle = if (isSuggested) getLocalizedString(R.string.auto_for_you) else getLocalizedString(R.string.about_tng_brand)
 
         val rootItem = MediaItem.Builder()
             .setMediaId(rootId)
@@ -102,21 +111,37 @@ class AutoBrowseTreeProvider @Inject constructor(
 
     @OptIn(UnstableApi::class)
     fun onGetItem(mediaId: String): ListenableFuture<LibraryResult<MediaItem>> {
-        val realId = mediaId.substringAfter("|")
-        val station = findStationByUuid(realId)
-            ?: return Futures.immediateFuture(LibraryResult.ofError(SessionError.ERROR_BAD_VALUE))
-        return Futures.immediateFuture(LibraryResult.ofItem(station.toMediaItem(context), null))
+        val future = SettableFuture.create<LibraryResult<MediaItem>>()
+        searchScope.launch {
+            val station = findStationByUuid(mediaId.substringAfter("|"))
+            if (station == null) {
+                future.set(LibraryResult.ofError(SessionError.ERROR_BAD_VALUE))
+            } else {
+                future.set(LibraryResult.ofItem(station.toMediaItem(context), null))
+            }
+        }
+        return future
     }
 
     fun onGetChildren(parentId: String, params: LibraryParams?): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
-        val items: List<MediaItem> = when (parentId) {
-            AutoBrowseTree.ROOT -> rootChildren()
-            AutoBrowseTree.BROWSE -> browseChildren()
-            AutoBrowseTree.RECENT -> recentChildren()
-            AutoBrowseTree.LIBRARY -> libraryChildren()
-            else -> emptyList()
+        // Le query al database girano fuori dal main thread: prima runBlocking bloccava
+        // i callback di browse (e quindi la UI di Android Auto).
+        val future = SettableFuture.create<LibraryResult<ImmutableList<MediaItem>>>()
+        searchScope.launch {
+            try {
+                val items: List<MediaItem> = when (parentId) {
+                    AutoBrowseTree.ROOT -> rootChildren()
+                    AutoBrowseTree.BROWSE -> browseChildren()
+                    AutoBrowseTree.RECENT -> recentChildren()
+                    AutoBrowseTree.LIBRARY -> libraryChildren()
+                    else -> emptyList()
+                }
+                future.set(LibraryResult.ofItemList(items, params))
+            } catch (e: Exception) {
+                future.setException(e)
+            }
         }
-        return Futures.immediateFuture(LibraryResult.ofItemList(items, params))
+        return future
     }
 
     fun onSearch(
@@ -206,10 +231,9 @@ class AutoBrowseTreeProvider @Inject constructor(
     }
 
     // Recents first, then the library; Radio Browser is never searched for a single station
-    fun findStationByUuid(uuid: String): RadioStation? = runBlocking {
+    suspend fun findStationByUuid(uuid: String): RadioStation? =
         recentRepository.getStationById(uuid)
             ?: libraryRepository.getLibraryStationById(uuid)
-    }
 
     private fun rootChildren(): List<MediaItem> = listOf(
         buildTabItem(AutoBrowseTree.LIBRARY, getLocalizedString(R.string.home_tab_library)),
@@ -217,17 +241,14 @@ class AutoBrowseTreeProvider @Inject constructor(
         buildTabItem(AutoBrowseTree.RECENT, getLocalizedString(R.string.home_tab_recent)),
     )
 
-    private fun browseChildren(): List<MediaItem> = runBlocking {
+    private suspend fun browseChildren(): List<MediaItem> =
         getBrowseStationsList().map { it.toMediaItem(context, AutoBrowseTree.BROWSE) }
-    }
 
-    private fun recentChildren(): List<MediaItem> = runBlocking {
+    private suspend fun recentChildren(): List<MediaItem> =
         recentRepository.getAllRecent().first().map { it.toMediaItem(context, AutoBrowseTree.RECENT) }
-    }
 
-    private fun libraryChildren(): List<MediaItem> = runBlocking {
+    private suspend fun libraryChildren(): List<MediaItem> =
         getLibraryStationsList().map { it.toMediaItem(context, AutoBrowseTree.LIBRARY) }
-    }
 
     private fun buildTabItem(id: String, title: String): MediaItem =
         MediaItem.Builder()
@@ -246,7 +267,7 @@ class AutoBrowseTreeProvider @Inject constructor(
             .build()
 
     private fun getLocalizedString(@StringRes resId: Int): String {
-        val language = runBlocking { settingsRepository.getSavedAppLanguage() } ?: "System"
+        val language = appLanguage
         val locale = if (language == "System" || language.isEmpty()) {
             Locale.getDefault()
         } else {

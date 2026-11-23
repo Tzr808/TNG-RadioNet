@@ -32,7 +32,11 @@ class CastControllerImpl @Inject constructor(
 ) : CastController {
 
     private val castContext = CastContext()
-    private val deviceDiscoverer: NsdDeviceDiscoverer
+    // Creata solo al primo startDiscovery(): la discovery mDNS (NsdManager) resta attiva per
+    // tutta la vita del processo e la SDK non espone un modo per fermarla.
+    private val deviceDiscoverer: NsdDeviceDiscoverer by lazy {
+        NsdDeviceDiscoverer(context, discoveryEventHandler)
+    }
     private val deviceCache = ConcurrentHashMap<String, DeviceInfo>()
 
     private var currentCastingDevice: CastingDevice? = null
@@ -73,8 +77,9 @@ class CastControllerImpl @Inject constructor(
         }
     }
 
-    init {
-        deviceDiscoverer = NsdDeviceDiscoverer(context, discoveryEventHandler)
+    override fun startDiscovery() {
+        // Il semplice accesso alla lazy property crea (e quindi avvia) il discoverer
+        deviceDiscoverer
     }
 
     private fun updateDiscoveredDevices() {

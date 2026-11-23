@@ -20,6 +20,7 @@ import com.armanmaurya.internetradio.service.PlaybackService
 import com.armanmaurya.internetradio.service.playback.PlaybackSessionCallback
 import com.armanmaurya.internetradio.service.playback.toMediaItem
 import com.armanmaurya.internetradio.service.playback.toRadioStation
+import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import com.armanmaurya.internetradio.core.media.prober.NativeProber
 import com.armanmaurya.internetradio.domain.repository.RecentRepository
@@ -50,15 +51,40 @@ class PlayerControllerImpl @Inject constructor(
     private val libraryRepository: com.armanmaurya.internetradio.domain.repository.LibraryRepository,
     private val audioAmplitudeManager: AudioAmplitudeManager
 ) : PlayerController {
-    private var controllerFuture = MediaController.Builder(
-        context,
-        SessionToken(context, ComponentName(context, PlaybackService::class.java))
-    ).setListener(object : MediaController.Listener {
-        override fun onDisconnected(controller: MediaController) {
-            android.util.Log.w("BlankSheetDebug", "controller DISCONNECTED")
+    // Il controller può essere rilasciato quando l'app viene chiusa e ricreato al successivo
+    // utilizzo: senza release il binding al PlaybackService resterebbe attivo per sempre.
+    private var controllerFuture: ListenableFuture<MediaController>? = null
+    private val controller: MediaController? get() {
+        if (controllerFuture == null) createController()
+        val future = controllerFuture ?: return null
+        return if (future.isDone && !future.isCancelled) future.get() else null
+    }
+
+    private fun createController() {
+        controllerFuture = MediaController.Builder(
+            context,
+            SessionToken(context, ComponentName(context, PlaybackService::class.java))
+        ).setListener(object : MediaController.Listener {
+            override fun onDisconnected(controller: MediaController) {
+                android.util.Log.w("BlankSheetDebug", "controller DISCONNECTED")
+            }
+        }).buildAsync()
+        initializeController()
+    }
+
+    /**
+     * Rilascia il MediaController per liberare il binding con PlaybackService.
+     * Il controller viene ricreato automaticamente alla prossima richiesta.
+     */
+    override fun releaseController() {
+        val future = controllerFuture ?: return
+        controllerFuture = null
+        try {
+            MediaController.releaseFuture(future)
+        } catch (_: Exception) {
+            // Anche in caso di errore non deve crashare
         }
-    }).buildAsync()
-    private val controller: MediaController? get() = if (controllerFuture?.isDone == true) controllerFuture?.get() else null
+    }
 
     private val _playbackSession = MutableStateFlow(PlaybackSession())
     override val playbackSession: StateFlow<PlaybackSession> = _playbackSession.asStateFlow()
@@ -337,7 +363,7 @@ class PlayerControllerImpl @Inject constructor(
                 android.util.Log.d("BlankSheetDebug", "session station=${it.currentStation?.name} playing=${it.isPlaying}")
             }
         }
-        initializeController()
+        createController()
         observeVolumeBoostPreference()
     }
 
@@ -353,8 +379,16 @@ class PlayerControllerImpl @Inject constructor(
     }
 
     private fun initializeController() {
-        controllerFuture.addListener({
-            controller?.let {
+        val future = controllerFuture ?: return
+        future.addListener({
+            // Se nel frattempo il controller è stato rilasciato/ricreato, ignora questo callback
+            if (controllerFuture !== future) return@addListener
+            val connected = if (future.isDone && !future.isCancelled) {
+                runCatching { future.get() }.getOrNull()
+            } else {
+                null
+            }
+            connected?.let {
                 android.util.Log.d("BlankSheetDebug", "controller connected=${it.isConnected} items=${it.mediaItemCount} current=${it.currentMediaItem?.mediaId}")
                 it.addListener(listener)
 

@@ -5,6 +5,12 @@ import com.armanmaurya.internetradio.domain.model.CastPlaybackState
 import kotlinx.coroutines.flow.StateFlow
 
 interface CastController {
+    /**
+     * Avvia la ricerca dei dispositivi Cast sulla rete. Va chiamata solo quando serve
+     * (apertura del dialog Cast): la discovery mDNS resta attiva finché vive il processo.
+     */
+    fun startDiscovery() {}
+
     val discoveredDevices: StateFlow<List<CastDevice>>
     val connectedDevice: StateFlow<CastDevice?>
     val playbackState: StateFlow<CastPlaybackState>

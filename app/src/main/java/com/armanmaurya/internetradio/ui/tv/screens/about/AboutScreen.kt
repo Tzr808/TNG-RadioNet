@@ -3,6 +3,7 @@ package com.armanmaurya.internetradio.ui.tv.screens.about
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -82,7 +83,7 @@ fun AboutScreen(
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = stringResource(R.string.app_name),
+                text = stringResource(R.string.about_tng_brand),
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
             )
             Text(
@@ -92,113 +93,40 @@ fun AboutScreen(
             )
         }
 
-        Text(
-            text = stringResource(R.string.about_app_description),
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-            modifier = Modifier.padding(horizontal = 32.dp)
-        )
-
-        // Author card
+        // Attribuzione essenziale: riferimenti social/community/donazioni nascosti.
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .padding(28.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = stringResource(R.string.about_author),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
-            )
-            Text(
-                text = stringResource(R.string.about_author_name),
+                text = stringResource(R.string.about_tng_based_on),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                TvIconLinkButton(
-                    icon = R.drawable.ic_linkedin,
-                    label = stringResource(R.string.about_cd_linkedin),
-                    onClick = { openUrl("https://www.linkedin.com/in/arman-maurya-2391aa263/") }
-                )
-                TvIconLinkButton(
-                    icon = R.drawable.ic_github,
-                    label = stringResource(R.string.about_cd_github),
-                    onClick = { openUrl("https://github.com/armanmaurya") }
-                )
-                TvIconLinkButton(
-                    icon = R.drawable.ic_instagram,
-                    label = stringResource(R.string.about_cd_instagram),
-                    onClick = { openUrl("https://www.instagram.com/param.cs/") }
-                )
-            }
-        }
-
-        // Contributors card
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .padding(28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.about_contributors),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
-            )
-            Text(
-                text = stringResource(R.string.about_contribute_msg),
-                style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                modifier = Modifier.padding(top = 8.dp)
             )
-            Button(
-                onClick = { openUrl("https://github.com/armanmaurya/InternetRadio/graphs/contributors") },
-                colors = ButtonDefaults.colors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    focusedContainerColor = MaterialTheme.colorScheme.inverseSurface,
-                    focusedContentColor = MaterialTheme.colorScheme.inverseOnSurface
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.about_view_contributors))
-            }
-        }
-
-        // View on GitHub button
-        Button(
-            onClick = { openUrl("https://github.com/armanmaurya/InternetRadio") },
-            modifier = Modifier.fillMaxWidth(0.5f),
-            colors = ButtonDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                focusedContainerColor = MaterialTheme.colorScheme.inverseSurface,
-                focusedContentColor = MaterialTheme.colorScheme.inverseOnSurface
+            Text(
+                text = stringResource(R.string.about_tng_author),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                textAlign = TextAlign.Center
             )
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_github),
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
+            Text(
+                text = stringResource(R.string.about_tng_available_on),
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                modifier = Modifier.padding(top = 8.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.about_view_github))
+            Text(
+                text = stringResource(R.string.about_tng_github),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable {
+                    openUrl("https://github.com/armanmaurya/InternetRadio")
+                }
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))

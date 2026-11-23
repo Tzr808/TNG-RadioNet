@@ -40,7 +40,8 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 19
-        versionName = "0.9.1"
+        // Versione del fork TNG RadioNet (mostrata in Impostazioni → About)
+        versionName = "1.0.0.01"
 
         if (System.getenv("IS_NIGHTLY_BUILD") == "true") {
             versionCode = (versionCode ?: 18) + (System.getenv("NIGHTLY_RUN_NUMBER")?.toIntOrNull() ?: 0)

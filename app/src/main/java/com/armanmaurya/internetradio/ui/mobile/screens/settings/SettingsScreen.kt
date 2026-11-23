@@ -311,31 +311,16 @@ fun SettingsScreen(
                 topShape = topShape,
                 bottomShape = bottomShape
             )
-            CommunitySection()
             val mainViewModel: com.armanmaurya.internetradio.ui.shared.viewmodels.MainViewModel = androidx.hilt.navigation.compose.hiltViewModel()
             val versionName = mainViewModel.systemFacade.getAppVersionName()
-            val versionCode = mainViewModel.systemFacade.getAppVersionCode().toString()
 
-            // TNG flavor uses a simplified AboutSection; other flavors use the default
-            val context = LocalContext.current
-            val isTngFlavor = context.resources.getBoolean(com.armanmaurya.internetradio.R.bool.is_tng_flavor)
-
-            if (isTngFlavor) {
-                TngAboutSectionInline(
-                    modifier = Modifier,
-                    versionName = versionName
-                )
-            } else {
-                AboutSection(
-                    shape = singleShape,
-                    topShape = topShape,
-                    bottomShape = bottomShape,
-                    versionName = versionName,
-                    versionCode = versionCode
-                )
-            }
-
-            DonateSection()
+            // About personalizzata (TNG RadioNet): sostituisce AboutSection/CommunitySection/
+            // DonateSection originali, nascondendo i riferimenti social e di supporto dell'autore.
+            // Il composable vive in custom/about/TngAboutSection.kt, fuori dal codice dell'autore.
+            com.armanmaurya.internetradio.custom.about.TngAboutSection(
+                modifier = Modifier,
+                versionName = versionName
+            )
 
             androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
         }
@@ -477,18 +462,22 @@ private fun AppearanceSection(
             shape = middleShape
         )
 
-        androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(2.dp))
+        // Pure Black ha senso solo quando il tema effettivo è scuro: in tema chiaro non avrebbe
+        // alcun effetto, quindi la voce non viene mostrata.
+        if (darkTheme) {
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(2.dp))
 
-        ToggleItem(
-            title = stringResource(R.string.settings_pure_black_title),
-            subtitle = stringResource(R.string.settings_pure_black_desc),
-            isEnabled = uiState.isPureBlackEnabled,
-            onToggle = onSetPureBlackEnabled,
-            icon = Icons.Default.Brightness4,
-            shape = bottomShape
-        )
+            ToggleItem(
+                title = stringResource(R.string.settings_pure_black_title),
+                subtitle = stringResource(R.string.settings_pure_black_desc),
+                isEnabled = uiState.isPureBlackEnabled,
+                onToggle = onSetPureBlackEnabled,
+                icon = Icons.Default.Brightness4,
+                shape = bottomShape
+            )
 
-        androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(2.dp))
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(2.dp))
+        }
 
         Item(
             title = stringResource(R.string.settings_widget_appearance_title),
@@ -1557,91 +1546,6 @@ private fun ScheduleSection(
                     valueRange = 1f..60f
                 )
             }
-        }
-    }
-}
-
-/**
- * TNG-specific AboutSection composable (inlined for upstream compatibility).
- * Shown only when BuildConfig.FLAVOR == "tng".
- * Replaces the default AboutSection with a simplified dark card design.
- */
-@Composable
-private fun TngAboutSectionInline(
-    modifier: Modifier = Modifier,
-    versionName: String,
-) {
-    val context = LocalContext.current
-    val githubUrl = "https://github.com/armanmaurya/InternetRadio"
-
-    androidx.compose.material3.Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // App name
-            Text(
-                text = context.getString(com.armanmaurya.internetradio.R.string.app_name),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            // Version line
-            Text(
-                text = context.getString(
-                    com.armanmaurya.internetradio.R.string.tng_about_version_format,
-                    versionName
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Attribution text with clickable GitHub link
-            val basedOnText = context.getString(com.armanmaurya.internetradio.R.string.tng_about_based_on)
-            val authorText = context.getString(com.armanmaurya.internetradio.R.string.tng_about_author)
-            val availableOnText = context.getString(com.armanmaurya.internetradio.R.string.tng_about_available_on)
-            val githubText = context.getString(com.armanmaurya.internetradio.R.string.tng_about_github)
-
-            val annotatedString = androidx.compose.ui.text.buildAnnotatedString {
-                append(basedOnText)
-                append(" ")
-                append(authorText)
-                append("\n")
-                append(availableOnText)
-                append(" ")
-                append(githubText)
-            }
-
-            Text(
-                text = annotatedString,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubUrl))
-                            context.startActivity(intent)
-                        } catch (_: Exception) {
-                            // Silently ignore
-                        }
-                    }
-            )
         }
     }
 }

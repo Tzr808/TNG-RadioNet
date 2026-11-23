@@ -62,7 +62,13 @@ class RecordingDurationCache internal constructor(private val cacheFile: File) {
         val saved = runCatching {
             val tempFile = File(cacheFile.parentFile, "${cacheFile.name}.tmp")
             tempFile.writeText(gson.toJson(readable))
-            check(tempFile.renameTo(cacheFile)) { "Could not replace ${cacheFile.name}" }
+            // File.renameTo non sovrascrive un file esistente su tutte le piattaforme:
+            // usa un move con REPLACE_EXISTING.
+            java.nio.file.Files.move(
+                tempFile.toPath(),
+                cacheFile.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING
+            )
         }.isSuccess
         if (!saved) hasUnsavedChanges.set(true)
     }

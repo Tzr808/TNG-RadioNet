@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Stringhe personalizzate (non presenti nel progetto originale).
+  Tenute in un file separato per ridurre i conflitti con gli aggiornamenti upstream.
+-->
+<resources>
+
+    <!-- Pure Black -->
+    <string name="settings_pure_black_title">Pure Black</string>
+    <string name="settings_pure_black_desc">Use pure black background in dark mode</string>
+
+    <!-- Buffer level -->
+    <string name="settings_buffer_level">Buffer Level</string>
+    <string name="settings_buffer_standard">Standard (Default)</string>
+    <string name="settings_buffer_high">High (120s max)</string>
+
+    <!-- Station volume (per station + output device) -->
+    <string name="player_volume">Volume</string>
+    <string name="player_volume_station_label">Volume per station</string>
+    <string name="player_volume_device_label">Devices</string>
+    <string name="player_volume_save">Save volume</string>
+    <string name="player_volume_clear_label">Clear saved volume</string>
+    <string name="player_cd_station_volume">Volume for this station</string>
+    <string name="player_volume_bt_permission_title">Bluetooth permission not granted</string>
+    <string name="player_volume_bt_permission_message">The volume will still be saved, but the Bluetooth device name won\'t be shown. You can grant the permission from the system settings.</string>
+    <string name="player_volume_bt_permission_ok">OK</string>
+
+    <!-- About personalizzata: testi fissi (non tradotti) -->
+    <string name="about_tng_brand" translatable="false">TNG RadioNet</string>
+    <string name="about_tng_version_format" translatable="false">ver. T %1$s</string>
+    <string name="about_tng_based_on" translatable="false">Based on original app Internet Radio by</string>
+    <string name="about_tng_author" translatable="false">Arman Maurya</string>
+    <string name="about_tng_available_on" translatable="false">Available on</string>
+    <string name="about_tng_github" translatable="false">GitHub</string>
+
+    <!-- TNG branding placeholders (overridden by the tng flavor resources) -->
+    <string name="tng_about_version_format">ver. %1$s</string>
+    <string name="tng_about_based_on">Based on original app Internet Radio by</string>
+    <string name="tng_about_author">Arman Maurya</string>
+    <string name="tng_about_available_on">available on</string>
+    <string name="tng_about_github">GitHub</string>
+
+</resources>

@@ -14,6 +14,7 @@ import com.armanmaurya.internetradio.ui.mobile.screens.player.components.VolumeD
 import com.armanmaurya.internetradio.ui.mobile.screens.player.components.TrackDialog
 import com.armanmaurya.internetradio.ui.mobile.screens.player.components.Controls
 import com.armanmaurya.internetradio.ui.mobile.screens.player.components.stationvolume.StationVolumeDialog
+import com.armanmaurya.internetradio.ui.mobile.screens.player.components.stationvolume.StationVolumeButton
 import com.armanmaurya.internetradio.ui.mobile.screens.player.components.stationvolume.DiscoveredDevice
 import com.armanmaurya.internetradio.ui.mobile.screens.player.components.stationvolume.DeviceType
 import com.armanmaurya.internetradio.ui.mobile.screens.player.tabs.recordings.RecordingsTab
@@ -47,7 +48,6 @@ import androidx.compose.material.icons.filled.*
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -88,11 +88,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.foundation.Canvas
-import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import coil3.compose.SubcomposeAsyncImage
 import com.armanmaurya.internetradio.R
 import com.armanmaurya.internetradio.domain.model.CastDevice
@@ -194,6 +190,7 @@ fun PlayerBottomSheet(
     val scope = rememberCoroutineScope()
     val uiState by playerViewModel.uiState.collectAsStateWithLifecycle()
     val discoveredCastDevices by playerViewModel.discoveredCastDevices.collectAsStateWithLifecycle()
+    val hasSavedVolumeForCurrentStation by playerViewModel.hasSavedVolumeForCurrentStation.collectAsStateWithLifecycle()
 
     // BackHandler to collapse sheet when expanded
     BackHandler(enabled = scaffoldState.bottomSheetState.currentValue == SheetValue.Expanded) {
@@ -392,10 +389,15 @@ fun PlayerBottomSheet(
                     }
                 },
                 onDialogOpenChange = onDialogOpenChange,
-                onSaveStationVolume = { scope.launch { playerViewModel.saveCurrentVolumeForCurrentStation() } },
-                onClearStationVolume = { scope.launch { playerViewModel.clearVolumeForCurrentStation() } },
-                onVolumeSave = { vol -> scope.launch { playerViewModel.saveCurrentVolumeForCurrentStation(); /* volume already set via UI */ } },
-                onVolumeClearDialog = { scope.launch { playerViewModel.clearVolumeForCurrentStation() } }
+                onStartCastDiscovery = playerViewModel::startCastDiscovery,
+                onSaveStationVolume = playerViewModel::saveCurrentVolume,
+                onClearStationVolume = playerViewModel::clearCurrentSavedVolume,
+                onStationVolumeSelected = playerViewModel::onCurrentStationChanged,
+                hasSavedVolumeForCurrentStation = hasSavedVolumeForCurrentStation,
+                getActiveDeviceType = playerViewModel::getActiveDeviceType,
+                getDeviceVolumeFraction = playerViewModel::getDeviceVolumeFraction,
+                setDeviceVolumeFraction = playerViewModel::setDeviceVolumeFraction,
+                getActiveAudioDeviceName = playerViewModel::getActiveAudioDeviceName
             )
         }
     }
@@ -433,10 +435,15 @@ fun PlayerSheetContent(
     onToggleCurrentTrackStarred: () -> Unit = {},
     onDownloadHistoryLyrics: ((TrackHistoryEntity) -> Unit)? = null,
     onDialogOpenChange: (Boolean) -> Unit = {},
+    onStartCastDiscovery: () -> Unit = {},
     onSaveStationVolume: () -> Unit = {},
     onClearStationVolume: () -> Unit = {},
-    onVolumeSave: (Float) -> Unit = {},
-    onVolumeClearDialog: () -> Unit = {},
+    onStationVolumeSelected: (String, String) -> Unit = { _, _ -> },
+    hasSavedVolumeForCurrentStation: Boolean = false,
+    getActiveDeviceType: () -> String = { "speaker" },
+    getDeviceVolumeFraction: () -> Float = { 0f },
+    setDeviceVolumeFraction: (Float) -> Unit = {},
+    getActiveAudioDeviceName: () -> String = { "" },
     modifier: Modifier = Modifier
 ) {
     val playbackState = uiState
@@ -466,6 +473,7 @@ fun PlayerSheetContent(
     var showCastDialog by remember { mutableStateOf(false) }
     var showCoverArt by remember { mutableStateOf(false) }
     var showStationVolumeDialog by remember { mutableStateOf(false) }
+    var showBtPermissionDeniedDialog by remember { mutableStateOf(false) }
 
 
 
@@ -479,21 +487,6 @@ fun PlayerSheetContent(
     @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
     val bottomPagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 4 })
 
-    var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(playbackState.sleepTimerEndTime) {
-        val endTime = playbackState.sleepTimerEndTime
-        if (endTime != null) {
-            while (true) {
-                currentTime = System.currentTimeMillis()
-                if (currentTime >= endTime) {
-                    onCancelSleepTimer()
-                    break
-                }
-                delay(1000)
-            }
-        }
-    }
-
     val displayCodec = (if (!isFavorite || station.codec.isBlank() || station.codec.equals("UNKNOWN", ignoreCase = true)) playbackState.streamCodec else null) ?: station.codec
     val displayBitrate = (if (!isFavorite || station.bitrate <= 0) playbackState.streamBitrate else null) ?: station.bitrate
 
@@ -505,12 +498,6 @@ fun PlayerSheetContent(
 
     var showVolumeDialog by remember { mutableStateOf(false) }
 
-    // ── Calcolo hasSavedVolume in scope accessibile a tutto ──
-    val stationVolumesMap = uiState.savedStationVolumes
-    val activeDeviceIdForVolume = uiState.activeDeviceId ?: "default"
-    val hasSavedVolume = stationVolumesMap.isNotEmpty() &&
-        stationVolumesMap.containsKey("$station.stationUuid:$activeDeviceIdForVolume")
-
     // Tell the sheet when a player dialog is open so dragging can't collapse it underneath.
     val isAnyDialogOpen = showCastDialog || showVolumeDialog || showSleepTimerDialog || searchDialogTrack != null
     val currentOnDialogOpenChange by rememberUpdatedState(onDialogOpenChange)
@@ -518,11 +505,6 @@ fun PlayerSheetContent(
     DisposableEffect(Unit) { onDispose { currentOnDialogOpenChange(false) } }
     val volumeLevel = if (connectedCastDevice != null) volume else playbackState.volume
     val appPreferences = LocalAppPreferences.current
-
-    val remainingTime = playbackState.sleepTimerEndTime?.let { (it - currentTime).coerceAtLeast(0L) } ?: 0L
-    val sleepTimerProgress = if (playbackState.sleepTimerTotalDuration > 0) {
-        (remainingTime.toFloat() / playbackState.sleepTimerTotalDuration).coerceIn(0f, 1f)
-    } else 0f
 
     val coroutineScope = rememberCoroutineScope()
     val historyProgressAnim = remember { Animatable(0f) }
@@ -1064,7 +1046,11 @@ fun PlayerSheetContent(
                                         checked = isCasting,
                                         shape = castShape,
                                         enabled = historyProgress == 0f,
-                                        onClick = { showCastDialog = true },
+                                        onClick = {
+                                            // La discovery Cast è on-demand: si avvia solo ora
+                                            onStartCastDiscovery()
+                                            showCastDialog = true
+                                        },
                                         modifier = Modifier.sharedBounds(
                                             sharedContentState = rememberSharedContentState(
                                                 key = com.armanmaurya.internetradio.ui.shared.components.CAST_CONTAINER_KEY
@@ -1392,143 +1378,56 @@ fun PlayerSheetContent(
                             // Volume per Stazione/Dispositivo Button (sinistra)
                             val context = LocalContext.current
                             val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
-                            val viewModel = hiltViewModel<PlayerViewModel>()
-                            val coroutineScope = rememberCoroutineScope()
-                            
-                            val hasSavedVolume = viewModel.hasSavedVolumeForCurrentStation.collectAsStateWithLifecycle().value
-                            
-                            // Update station when it changes
+                            val hasSavedVolume = hasSavedVolumeForCurrentStation
+
+                            // Segnala la stazione al gestore dei volumi per stazione
                             LaunchedEffect(station.stationUuid, station.name) {
-                                viewModel.onCurrentStationChanged(station.stationUuid, station.name)
+                                onStationVolumeSelected(station.stationUuid, station.name)
                             }
                             
                             // Bluetooth permission launcher (Android 12+)
-                            var showBtPermissionDeniedDialog by remember { mutableStateOf(false) }
-                            
                             val btPermissionLauncher = rememberLauncherForActivityResult(
                                 contract = ActivityResultContracts.RequestPermission()
                             ) { isGranted ->
-                                if (isGranted == true) {
-                                    // Permesso accordato: salva il volume normalmente
-                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    viewModel.saveCurrentVolume()
-                                } else {
+                                if (isGranted != true) {
                                     // Permesso negato: mostra spiegazione ma salva comunque
                                     showBtPermissionDeniedDialog = true
-                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    viewModel.saveCurrentVolume()
                                 }
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onSaveStationVolume()
                             }
                             
-                            Box(
+                            StationVolumeButton(
                                 modifier = Modifier
                                     .width(recordButtonWidth)
-                                    .height(64.dp)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(
-                                        color = if (hasSavedVolume) MaterialTheme.colorScheme.primaryContainer
-                                                else MaterialTheme.colorScheme.secondaryContainer,
-                                        shape = RoundedCornerShape(20.dp)
-                                    )
-                                    .combinedClickable(
-                                        onClick = {
-                                            // Controlla il tipo di dispositivo attivo PRIMA di chiedere il permesso
-                                            val deviceType = viewModel.getActiveDeviceType()
-                                            val isBluetoothDevice = deviceType == "bluetooth" || deviceType == "ble_bluetooth"
-                                            val needsBtPermission = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S &&
-                                                isBluetoothDevice &&
-                                                androidx.core.content.ContextCompat.checkSelfPermission(
-                                                    context,
-                                                    android.Manifest.permission.BLUETOOTH_CONNECT
-                                                ) != PackageManager.PERMISSION_GRANTED
-                                            
-                                            if (needsBtPermission) {
-                                                btPermissionLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT)
-                                            } else {
-                                                // Vibrazione leggera di conferma salvataggio
-                                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                viewModel.saveCurrentVolume()
-                                            }
-                                        },
-                                        onLongClick = {
-                                            // Vibrazione decisa di conferma cancellazione
-                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            viewModel.clearCurrentSavedVolume()
-                                        }
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                // Icona con barretta curva indicatore
-                                Box(
-                                    modifier = Modifier.size(28.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = if (hasSavedVolume) Icons.Default.VolumeUp else Icons.Default.VolumeDown,
-                                        contentDescription = "Volume per stazione/dispositivo",
-                                        tint = if (hasSavedVolume) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSecondaryContainer
-                                        },
-                                        modifier = Modifier
-                                            .size(28.dp)
-                                            .graphicsLayer {
-                                                scaleX = -1f
-                                            }
-                                    )
-                                    // Barretta curva indicatore di volume salvato
-                                    if (hasSavedVolume) {
-                                        Canvas(
-                                            modifier = Modifier
-                                                .size(28.dp)
-                                                .align(Alignment.TopEnd)
-                                        ) {
-                                            val path = Path()
-                                            val arcRadius = size.width * 0.35f
-                                            val centerX = size.width / 2f
-                                            val centerY = size.height / 2f
-                                            val startX = centerX - arcRadius
-                                            val startY = centerY - arcRadius
-                                            path.moveTo(startX + arcRadius, startY + arcRadius * 0.5f)
-                                            path.arcTo(
-                                                androidx.compose.ui.geometry.Rect(
-                                                    startX,
-                                                    startY,
-                                                    startX + arcRadius * 2f,
-                                                    startY + arcRadius * 2f
-                                                ),
-                                                startAngleDegrees = -45f,
-                                                sweepAngleDegrees = 90f,
-                                                forceMoveTo = false
-                                            )
-                                            drawPath(
-                                                path = path,
-                                                color = ComposeColor(0xFF4CAF50),
-                                                style = Stroke(width = 2.5f)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
+                                    .height(64.dp),
+                                hasSavedVolume = hasSavedVolumeForCurrentStation,
+                                onToggleClick = {
+                                    // Controlla il tipo di dispositivo attivo PRIMA di chiedere il permesso
+                                    val deviceType = getActiveDeviceType()
+                                    val isBluetoothDevice = deviceType == "bluetooth" || deviceType == "ble_bluetooth"
+                                    val needsBtPermission =
+                                        android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S &&
+                                            isBluetoothDevice &&
+                                            androidx.core.content.ContextCompat.checkSelfPermission(
+                                                context,
+                                                android.Manifest.permission.BLUETOOTH_CONNECT
+                                            ) != PackageManager.PERMISSION_GRANTED
 
-            // Dialog permesso Bluetooth negato
-            if (showBtPermissionDeniedDialog) {
-                androidx.compose.material3.AlertDialog(
-                    onDismissRequest = { showBtPermissionDeniedDialog = false },
-                    title = { Text("Permesso Bluetooth non concesso") },
-                    text = {
-                        Text(
-                            "Il permesso Bluetooth è stato negato. Il volume verrà comunque salvato, ma il nome del dispositivo (es. cuffie Bluetooth) non sarà visibile."
-                        )
-                    },
-                    confirmButton = {
-                        androidx.compose.material3.TextButton(onClick = { showBtPermissionDeniedDialog = false }) {
-                            Text("OK")
-                        }
-                    }
-                )
-            }
+                                    if (needsBtPermission) {
+                                        btPermissionLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT)
+                                    } else {
+                                        // Vibrazione leggera di conferma salvataggio
+                                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        onSaveStationVolume()
+                                    }
+                                },
+                                onLongClick = {
+                                    // Vibrazione decisa di conferma cancellazione
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onClearStationVolume()
+                                }
+                            )
 
                             // Waveform Pill
                             Row(
@@ -1638,12 +1537,11 @@ fun PlayerSheetContent(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Controls Row
-                Controls(
+                TickingControls(
                     historyProgress = historyProgress,
                     showSleepTimerDialog = showSleepTimerDialog,
                     sleepTimerEndTime = playbackState.sleepTimerEndTime,
-                    remainingTime = remainingTime,
-                    sleepTimerProgress = sleepTimerProgress,
+                    sleepTimerTotalDuration = playbackState.sleepTimerTotalDuration,
                     hasPrevious = playbackState.hasPrevious && playbackState.currentPlaylist.size > 1,
                     hasNext = playbackState.hasNext && playbackState.currentPlaylist.size > 1,
                     isPlaying = playbackState.isPlaying,
@@ -1907,11 +1805,15 @@ fun PlayerSheetContent(
                 type = DeviceType.CAST
             )
         }
-        var dialogVolume by remember { mutableFloatStateOf(stationVolumesMap["${station.stationUuid}:$activeDeviceIdForVolume"] ?: volumeLevel) }
+        val isCasting = connectedCastDevice != null
+        var dialogVolume by remember { mutableFloatStateOf(0f) }
+        var activeAudioDeviceName by remember { mutableStateOf("") }
 
-        LaunchedEffect(showStationVolumeDialog) {
+        // Ogni apertura rilegge il volume reale e il dispositivo attivo
+        LaunchedEffect(showStationVolumeDialog, station.stationUuid, isCasting) {
             if (showStationVolumeDialog) {
-                dialogVolume = stationVolumesMap["${station.stationUuid}:$activeDeviceIdForVolume"] ?: volumeLevel
+                dialogVolume = if (isCasting) volume else getDeviceVolumeFraction()
+                activeAudioDeviceName = if (isCasting) connectedCastDevice?.name.orEmpty() else getActiveAudioDeviceName()
             }
         }
 
@@ -1919,27 +1821,44 @@ fun PlayerSheetContent(
             showDialog = showStationVolumeDialog,
             onDismissRequest = { showStationVolumeDialog = false },
             currentVolume = dialogVolume,
-            onVolumeChange = { dialogVolume = it },
-            onVolumeSave = { vol ->
-                onVolumeSave(vol)
+            onVolumeChange = { newVolume ->
+                dialogVolume = newVolume
+                // Applica subito: volume Cast se in cast, altrimenti volume del dispositivo
+                if (isCasting) onVolumeChange(newVolume) else setDeviceVolumeFraction(newVolume)
+            },
+            onVolumeSave = {
+                if (!isCasting) onSaveStationVolume()
                 showStationVolumeDialog = false
             },
             onVolumeClear = {
-                onVolumeClearDialog()
+                onClearStationVolume()
                 showStationVolumeDialog = false
             },
-            hasSavedVolume = hasSavedVolume,
-            isCastActive = connectedCastDevice != null,
+            hasSavedVolume = hasSavedVolumeForCurrentStation && !isCasting,
+            isCastActive = isCasting,
             connectedCastDeviceName = connectedCastDevice?.name,
             discoveredDevices = discoveredDevices,
-            activeDeviceId = activeDeviceIdForVolume,
+            activeDeviceId = activeAudioDeviceName.ifBlank { null },
             stationName = station.name.ifBlank { null }
         )
 
-        SleepTimerDialog(
+        if (showBtPermissionDeniedDialog) {
+            AlertDialog(
+                onDismissRequest = { showBtPermissionDeniedDialog = false },
+                title = { Text(stringResource(R.string.player_volume_bt_permission_title)) },
+                text = { Text(stringResource(R.string.player_volume_bt_permission_message)) },
+                confirmButton = {
+                    TextButton(onClick = { showBtPermissionDeniedDialog = false }) {
+                        Text(stringResource(R.string.player_volume_bt_permission_ok))
+                    }
+                }
+            )
+        }
+
+        TickingSleepTimerDialog(
             showDialog = showSleepTimerDialog,
             activeTimerEndTime = playbackState.sleepTimerEndTime,
-            timerProgress = sleepTimerProgress,
+            timerTotalDuration = playbackState.sleepTimerTotalDuration,
             onDismissRequest = { showSleepTimerDialog = false },
             onSetTimer = { onSetSleepTimer(it) },
             onCancelTimer = { onCancelSleepTimer() }
@@ -1978,4 +1897,89 @@ private fun HeaderPairButton(
             content()
         }
     }
+}
+
+/**
+ * Restituisce i millisecondi mancanti al termine del sleep timer, aggiornati una volta al secondo.
+ * Isolato in un composable dedicato: prima questo stato veniva letto dal corpo di
+ * [PlayerSheetContent] e ne forzava la ricomposizione completa ogni secondo.
+ */
+@Composable
+private fun rememberSleepTimerRemaining(endTime: Long?): Long {
+    if (endTime == null) return 0L
+    var remaining by remember(endTime) {
+        mutableLongStateOf((endTime - System.currentTimeMillis()).coerceAtLeast(0L))
+    }
+    LaunchedEffect(endTime) {
+        while (true) {
+            remaining = (endTime - System.currentTimeMillis()).coerceAtLeast(0L)
+            if (remaining == 0L) break
+            delay(1000L)
+        }
+    }
+    return remaining
+}
+
+private fun sleepTimerProgressOf(remainingMs: Long, totalDurationMs: Long): Float =
+    if (totalDurationMs > 0L) (remainingMs.toFloat() / totalDurationMs).coerceIn(0f, 1f) else 0f
+
+/** Wrapper che confina il tick del sleep timer al solo sotto-albero dei controlli. */
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun SharedTransitionScope.TickingControls(
+    historyProgress: Float,
+    showSleepTimerDialog: Boolean,
+    sleepTimerEndTime: Long?,
+    sleepTimerTotalDuration: Long,
+    hasPrevious: Boolean,
+    hasNext: Boolean,
+    isPlaying: Boolean,
+    isLoading: Boolean,
+    isRecording: Boolean,
+    onOpenSleepTimer: () -> Unit,
+    onPrevious: () -> Unit,
+    onTogglePlayPause: () -> Unit,
+    onNext: () -> Unit,
+    onToggleRecording: () -> Unit
+) {
+    val remainingMs = rememberSleepTimerRemaining(sleepTimerEndTime)
+    Controls(
+        historyProgress = historyProgress,
+        showSleepTimerDialog = showSleepTimerDialog,
+        sleepTimerEndTime = sleepTimerEndTime,
+        remainingTime = remainingMs,
+        sleepTimerProgress = sleepTimerProgressOf(remainingMs, sleepTimerTotalDuration),
+        hasPrevious = hasPrevious,
+        hasNext = hasNext,
+        isPlaying = isPlaying,
+        isLoading = isLoading,
+        isRecording = isRecording,
+        onOpenSleepTimer = onOpenSleepTimer,
+        onPrevious = onPrevious,
+        onTogglePlayPause = onTogglePlayPause,
+        onNext = onNext,
+        onToggleRecording = onToggleRecording
+    )
+}
+
+/** Wrapper che confina il tick del sleep timer alla sola finestra del timer. */
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun SharedTransitionScope.TickingSleepTimerDialog(
+    showDialog: Boolean,
+    activeTimerEndTime: Long?,
+    timerTotalDuration: Long,
+    onDismissRequest: () -> Unit,
+    onSetTimer: (Long) -> Unit,
+    onCancelTimer: () -> Unit
+) {
+    val remainingMs = rememberSleepTimerRemaining(activeTimerEndTime)
+    SleepTimerDialog(
+        showDialog = showDialog,
+        activeTimerEndTime = activeTimerEndTime,
+        timerProgress = sleepTimerProgressOf(remainingMs, timerTotalDuration),
+        onDismissRequest = onDismissRequest,
+        onSetTimer = onSetTimer,
+        onCancelTimer = onCancelTimer
+    )
 }
