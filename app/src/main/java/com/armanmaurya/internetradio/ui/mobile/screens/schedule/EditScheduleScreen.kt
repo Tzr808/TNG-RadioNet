@@ -39,6 +39,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.armanmaurya.internetradio.R
+import com.armanmaurya.internetradio.custom.artwork.StationArtworkImage
 import androidx.compose.ui.platform.LocalContext
 import com.armanmaurya.internetradio.ui.shared.theme.LocalAppPreferences
 import androidx.compose.ui.unit.dp
@@ -435,45 +436,13 @@ private fun ScheduleConfigurationForm(
                 val showThumbnails = LocalAppPreferences.current.showStationThumbnails
 
                 Box(modifier = Modifier.fillMaxSize()) {
-                    if (showThumbnails && station.favicon.isNotBlank()) {
-                        coil3.compose.SubcomposeAsyncImage(
-                            model = coil3.request.ImageRequest.Builder(LocalContext.current)
-                                .data(station.favicon)
-                                .size(coil3.size.Size.ORIGINAL)
-                                .build(),
-                            contentDescription = stringResource(R.string.schedule_station_logo_cd),
-                            contentScale = ContentScale.Crop,
-                            filterQuality = FilterQuality.High,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            error = {
-                                androidx.compose.foundation.Image(
-                                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                                    contentDescription = null,
-                                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            },
-                            loading = {
-                                androidx.compose.foundation.Image(
-                                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                                    contentDescription = null,
-                                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                        )
-                    } else {
-                        androidx.compose.foundation.Image(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = null,
-                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                        )
-                    }
+                    StationArtworkImage(
+                        station = station,
+                        contentDescription = stringResource(R.string.schedule_station_logo_cd),
+                        contentScale = ContentScale.Crop,
+                        showThumbnails = showThumbnails,
+                        modifier = Modifier.fillMaxSize()
+                    )
 
                     val gradientBrush = remember {
                         Brush.verticalGradient(

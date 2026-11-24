@@ -80,6 +80,13 @@
             android:exported="true"
             android:grantUriPermissions="true" />
 
+        <!-- Avatar generati per le stazioni senza favicon (solo uso interno, non esportato) -->
+        <provider
+            android:name=".core.provider.StationAvatarProvider"
+            android:authorities="${applicationId}.stationavatar"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
         <!-- System screensaver: TV Settings → Screensaver → Internet Radio -->
         <service
             android:name=".service.screensaver.NowPlayingDreamService"

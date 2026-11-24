@@ -25,6 +25,7 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.armanmaurya.internetradio.R
 import com.armanmaurya.internetradio.core.utils.extractPaletteFromBitmap
 import com.armanmaurya.internetradio.core.utils.resolveArtwork
+import com.armanmaurya.internetradio.custom.artwork.stationArtworkUrl
 import com.armanmaurya.internetradio.domain.controller.WidgetController
 import com.armanmaurya.internetradio.service.PlaybackService
 import com.armanmaurya.internetradio.ui.widget.components.PlayerContent
@@ -99,12 +100,14 @@ class NowPlayingWidget : GlanceAppWidget() {
 
             val artist = prefs[WidgetPreferenceKeys.ARTIST] ?: latest?.artist ?: ""
 
+            val lastStationArtwork = lastStation?.let { stationArtworkUrl(context, it) }
+
             val artworkUrl = (prefs[WidgetPreferenceKeys.ARTWORK_URL] ?: latest?.artworkUrl)?.takeIf { it.isNotBlank() }
-                ?: lastStation?.favicon
+                ?: lastStationArtwork
 
             val stationThumbnailUrl = if (isCoverArtFetched) {
                 (prefs[WidgetPreferenceKeys.STATION_THUMBNAIL_URL] ?: latest?.stationThumbnailUrl)?.takeIf { it.isNotBlank() }
-                    ?: lastStation?.favicon
+                    ?: lastStationArtwork
             } else null
 
             val hasNext = prefs[WidgetPreferenceKeys.HAS_NEXT] ?: latest?.hasNext ?: false

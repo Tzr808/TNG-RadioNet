@@ -54,6 +54,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.armanmaurya.internetradio.R
+import com.armanmaurya.internetradio.custom.artwork.StationArtworkImage
 import com.armanmaurya.internetradio.domain.model.RadioStation
 import com.armanmaurya.internetradio.ui.shared.theme.LocalAppPreferences
 
@@ -131,44 +132,13 @@ fun StationCard(
         val showThumbnails = LocalAppPreferences.current.showStationThumbnails
 
         Box(modifier = Modifier.fillMaxSize()) {
-            if (showThumbnails && station.favicon.isNotBlank()) {
-                coil3.compose.SubcomposeAsyncImage(
-                    model = coil3.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
-                        .data(station.favicon)
-                        .build(),
-                    contentDescription = stringResource(R.string.home_cd_station_logo, station.name),
-                    contentScale = ContentScale.Crop,
-                    filterQuality = FilterQuality.High,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    error = {
-                        androidx.compose.foundation.Image(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = null,
-                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    },
-                    loading = {
-                        androidx.compose.foundation.Image(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = null,
-                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                )
-            } else {
-                androidx.compose.foundation.Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                    contentDescription = null,
-                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
-            }
+            StationArtworkImage(
+                station = station,
+                contentDescription = stringResource(R.string.home_cd_station_logo, station.name),
+                contentScale = ContentScale.Crop,
+                showThumbnails = showThumbnails,
+                modifier = Modifier.fillMaxSize()
+            )
 
             // Gradient Overlay
             Box(

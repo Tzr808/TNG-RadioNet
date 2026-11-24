@@ -33,6 +33,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.armanmaurya.internetradio.R
+import com.armanmaurya.internetradio.custom.artwork.StationArtworkImage
 import com.armanmaurya.internetradio.domain.model.RadioStation
 import com.armanmaurya.internetradio.ui.mobile.screens.home.components.PlayingVisualizer
 
@@ -56,18 +57,13 @@ fun StationCard(
         shape = CardDefaults.shape(shape = RoundedCornerShape(12.dp))
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            AsyncImage(
-                model = coil3.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
-                    .data(station.favicon.ifBlank { null })
-                    .build(),
+            StationArtworkImage(
+                station = station,
                 contentDescription = "${station.name} logo",
                 contentScale = ContentScale.Crop,
-                filterQuality = FilterQuality.High,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF1E1E1E)),
-                error = painterResource(id = R.drawable.ic_launcher_foreground),
-                fallback = painterResource(id = R.drawable.ic_launcher_foreground)
+                    .background(Color(0xFF1E1E1E))
             )
 
             // Gradient Overlay

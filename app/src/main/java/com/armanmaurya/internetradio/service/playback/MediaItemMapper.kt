@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.armanmaurya.internetradio.core.provider.SvgProxyProvider
+import com.armanmaurya.internetradio.custom.artwork.stationAvatarUri
 import com.armanmaurya.internetradio.domain.model.RadioStation
 import com.google.gson.Gson
 import com.google.gson.JsonParseException
@@ -27,10 +28,6 @@ fun MediaItem.toRadioStation(): RadioStation? {
     }
 }
 
-/** App logo URI — used as fallback artwork for stations with no/broken favicon. */
-private val APP_LOGO_URI: Uri =
-    Uri.parse("android.resource://com.armanmaurya.internetradio/mipmap/ic_launcher")
-
 /**
  * Converts a [RadioStation] domain model to a Media3 [MediaItem] with artwork proxying.
  */
@@ -45,7 +42,12 @@ fun RadioStation.toMediaItem(
         favicon.isNotBlank() -> favicon
         else -> null
     }
-    val artworkUri = if (!showThumbnails) Uri.EMPTY else (artworkUriStr?.let { Uri.parse(it) } ?: APP_LOGO_URI)
+    val artworkUri = if (!showThumbnails) {
+        Uri.EMPTY
+    } else {
+        artworkUriStr?.let { Uri.parse(it) }
+            ?: Uri.parse(stationAvatarUri(context, name, stationUuid))
+    }
     val id = if (parentId != null) "$parentId|$stationUuid" else stationUuid
 
     return MediaItem.Builder()
@@ -91,7 +93,12 @@ fun createStationMediaItem(
         stationFavicon.isNotBlank() -> stationFavicon
         else -> null
     }
-    val artworkUri = if (!showThumbnails) Uri.EMPTY else (artworkUriStr?.let { Uri.parse(it) } ?: APP_LOGO_URI)
+    val artworkUri = if (!showThumbnails) {
+        Uri.EMPTY
+    } else {
+        artworkUriStr?.let { Uri.parse(it) }
+            ?: Uri.parse(stationAvatarUri(context, stationName, stationUuid))
+    }
 
     return MediaItem.Builder()
         .setMediaId(stationUuid)

@@ -300,6 +300,14 @@ Verifica che questi punti esistano ancora dopo un pull (sono pochi e tutti picco
 | H-18 | `main/AndroidManifest.xml` | `android:label="TNG RadioNet"` su `<application>`, `MobileActivity`, `TvActivity`, `NowPlayingDreamService` (label letterale: vince sulle traduzioni di `app_name`) |
 | H-19 | `ui/mobile/screens/settings/SettingsScreen.kt` | al posto di `CommunitySection()` + `AboutSection(...)` + `DonateSection()` c'è la sola chiamata a `custom.about.TngAboutSection(versionName = ...)`. Le tre funzioni originali restano nel file ma non sono più chiamate |
 | H-20 | `ui/tv/screens/about/AboutScreen.kt` | al posto di descrizione + author card + contributors + pulsante GitHub c'è il blocco attribuzione (`about_tng_based_on` / `about_tng_author` / `about_tng_available_on` / `about_tng_github`) |
+| H-21 | `AndroidManifest.xml` | `<provider>` `StationAvatarProvider` con authority `${applicationId}.stationavatar`, `android:exported="false"` |
+| H-22 | `service/playback/MediaItemMapper.kt` | import `custom.artwork.stationAvatarUri`; fallback artwork = `Uri.parse(stationAvatarUri(context, name, stationUuid))` al posto di `APP_LOGO_URI` (costante rimossa) |
+| H-23 | `ui/mobile/screens/home/components/StationCard.kt` | import `custom.artwork.StationArtworkImage`; il blocco `SubcomposeAsyncImage`/`painterResource` è sostituito da `StationArtworkImage(...)` |
+| H-24 | `ui/mobile/screens/home/components/StationListCard.kt` | idem H-23 (thumbnail 56 dp) |
+| H-25 | `ui/tv/components/StationCard.kt` | idem H-23 (card TV) |
+| H-26 | `ui/mobile/screens/schedule/EditScheduleScreen.kt` | idem H-23 (anteprima stazione nello schedule) |
+| H-27 | `ui/mobile/screens/home/tabs/schedules/components/ScheduleItem.kt` | `StationArtworkImage(name = schedule.stationName, favicon = stationFavicon.orEmpty(), ...)` |
+| H-28 | `ui/widget/NowPlayingWidget.kt` | fallback `lastStationArtwork = lastStation?.let { stationArtworkUrl(context, it) }` per `artworkUrl` e `stationThumbnailUrl` |
 
 ---
 
@@ -319,6 +327,14 @@ Verifica che questi punti esistano ancora dopo un pull (sono pochi e tutti picco
   Nota: le traduzioni `values-<lingua>/strings.xml` originali contengono ancora il vecchio
   `app_name`, per questo la label del launcher è impostata in modo letterale nel manifest.
 - `app/src/tng/**` — branding TNG (StoreConfig, strings per locale, app_name).
+- `custom/artwork/StationAvatar.kt` — avatar deterministico (colori da hash FNV-1a, iniziali,
+  contrasto WCAG ≥ 4.5): `StationAvatarPainter` per Compose e `StationAvatar.bitmap()` per PNG.
+- `custom/artwork/StationArtwork.kt` — `StationArtworkImage` (favicon → avatar in loading/errore,
+  avatar immediato se il favicon manca) e `stationArtworkUrl()` per i consumer non-Compose.
+- `core/provider/StationAvatarProvider.kt` — `content://<pkg>.stationavatar/...` che serve l'avatar
+  PNG a Media3/notifica/widget. Non esportato e **senza rete** (non è un proxy come `SvgProxyProvider`).
+- `app/src/test/java/com/armanmaurya/internetradio/custom/artwork/StationAvatarTest.kt` — test di
+  determinismo, iniziali e contrasto del testo.
 
 ---
 
@@ -333,6 +349,8 @@ Verifica che questi punti esistano ancora dopo un pull (sono pochi e tutti picco
 
 ```bash
 ./gradlew assembleDebug
+# opzionale, solo avatar:
+./gradlew testDebugUnitTest --tests "*StationAvatarTest"
 ```
 
 5. Se compila, fai un commit di merge e annota qui eventuali patch non più applicabili.

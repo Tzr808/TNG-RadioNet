@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import com.armanmaurya.internetradio.R
+import com.armanmaurya.internetradio.custom.artwork.StationArtworkImage
 import com.armanmaurya.internetradio.domain.model.Schedule
 import com.armanmaurya.internetradio.domain.model.StartOfWeek
 import java.util.Calendar
@@ -78,49 +79,16 @@ fun ScheduleItem(
             ) {
                 val showThumbnails = LocalAppPreferences.current.showStationThumbnails
 
-                if (showThumbnails && !stationFavicon.isNullOrBlank()) {
-                    coil3.compose.SubcomposeAsyncImage(
-                        model = coil3.request.ImageRequest.Builder(LocalContext.current)
-                            .data(stationFavicon)
-                            .size(coil3.size.Size.ORIGINAL)
-                            .build(),
-                        contentDescription = stringResource(R.string.schedule_station_logo_cd),
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        error = {
-                            androidx.compose.foundation.Image(
-                                painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                                contentDescription = null,
-                                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        },
-                        loading = {
-                            androidx.compose.foundation.Image(
-                                painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                                contentDescription = null,
-                                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                    )
-                } else {
-                    androidx.compose.foundation.Image(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                        contentDescription = null,
-                        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                    )
-                }
+                StationArtworkImage(
+                    name = schedule.stationName,
+                    favicon = stationFavicon.orEmpty(),
+                    contentDescription = stringResource(R.string.schedule_station_logo_cd),
+                    contentScale = ContentScale.Crop,
+                    showThumbnails = showThumbnails,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                )
 
                 Spacer(modifier = Modifier.width(16.dp))
 
