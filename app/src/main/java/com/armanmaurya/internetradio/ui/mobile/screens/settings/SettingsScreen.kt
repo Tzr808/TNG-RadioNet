@@ -22,7 +22,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.LocalCafe
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.border
@@ -220,6 +222,16 @@ fun SettingsScreen(
                 onSetCustomColor = viewModel::setCustomColor,
                 onSetTheme = viewModel::setAppTheme,
                 onSetShowStationThumbnails = viewModel::setShowStationThumbnails,
+                onSetAutoArtworkEnabled = viewModel::setAutoArtworkEnabled,
+                onSetAutoArtworkWifiOnly = viewModel::setAutoArtworkWifiOnly,
+                onClearArtworkCache = {
+                    viewModel.clearArtworkCache()
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.settings_auto_artwork_cleared),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
                 onSetPureBlackEnabled = viewModel::setPureBlackEnabled,
                 onOpenWidgetConfig = {
                     context.startActivity(Intent(context, NowPlayingWidgetConfigureActivity::class.java))
@@ -370,6 +382,9 @@ private fun AppearanceSection(
     onSetCustomColor: (Int) -> Unit,
     onSetTheme: (AppTheme) -> Unit,
     onSetShowStationThumbnails: (Boolean) -> Unit,
+    onSetAutoArtworkEnabled: (Boolean) -> Unit,
+    onSetAutoArtworkWifiOnly: (Boolean) -> Unit,
+    onClearArtworkCache: () -> Unit,
     onSetPureBlackEnabled: (Boolean) -> Unit,
     onOpenWidgetConfig: () -> Unit,
     topShape: RoundedCornerShape,
@@ -461,6 +476,39 @@ private fun AppearanceSection(
             icon = Icons.Default.Image,
             shape = middleShape
         )
+
+        if (uiState.showStationThumbnails) {
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(2.dp))
+
+            ToggleItem(
+                title = stringResource(R.string.settings_auto_artwork_title),
+                subtitle = stringResource(R.string.settings_auto_artwork_desc),
+                isEnabled = uiState.autoArtworkEnabled,
+                onToggle = onSetAutoArtworkEnabled,
+                icon = Icons.Default.CloudDownload,
+                shape = middleShape
+            )
+
+            if (uiState.autoArtworkEnabled) {
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(2.dp))
+
+                ToggleItem(
+                    title = stringResource(R.string.settings_auto_artwork_wifi_title),
+                    subtitle = stringResource(R.string.settings_auto_artwork_wifi_desc),
+                    isEnabled = uiState.autoArtworkWifiOnly,
+                    onToggle = onSetAutoArtworkWifiOnly,
+                    icon = Icons.Default.Wifi,
+                    shape = middleShape
+                )
+
+                TextButton(
+                    onClick = onClearArtworkCache,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                ) {
+                    Text(stringResource(R.string.settings_auto_artwork_clear))
+                }
+            }
+        }
 
         // Pure Black ha senso solo quando il tema effettivo è scuro: in tema chiaro non avrebbe
         // alcun effetto, quindi la voce non viene mostrata.

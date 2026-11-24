@@ -308,6 +308,22 @@ Verifica che questi punti esistano ancora dopo un pull (sono pochi e tutti picco
 | H-26 | `ui/mobile/screens/schedule/EditScheduleScreen.kt` | idem H-23 (anteprima stazione nello schedule) |
 | H-27 | `ui/mobile/screens/home/tabs/schedules/components/ScheduleItem.kt` | `StationArtworkImage(name = schedule.stationName, favicon = stationFavicon.orEmpty(), ...)` |
 | H-28 | `ui/widget/NowPlayingWidget.kt` | fallback `lastStationArtwork = lastStation?.let { stationArtworkUrl(context, it) }` per `artworkUrl` e `stationThumbnailUrl` |
+| H-29 | `app/build.gradle.kts` | `buildConfig = true` + `buildConfigField("String", "LASTFM_API_KEY", ...)` letto da `local.properties` (mai committato) |
+| H-30 | `gradle/libs.versions.toml` | `workRuntime`, `androidxHilt` + librerie `androidx-work-runtime`, `androidx-hilt-work`, `androidx-hilt-compiler` |
+| H-31 | `app/build.gradle.kts` | dipendenze WorkManager/Hilt Work e `ksp(libs.androidx.hilt.compiler)` |
+| H-32 | `AndroidManifest.xml` | meta-data `androidx.work.WorkManagerInitializer` rimossa (inizializzazione via `RadioApplication`) |
+| H-33 | `RadioApplication.kt` | `Configuration.Provider` + `HiltWorkerFactory` + `scheduleIfEnabled()` all'avvio |
+| H-34 | `data/local/RadioDatabase.kt` | entità `StationArtworkCacheEntity`, `version = 14`, `stationArtworkCacheDao`, `MIGRATION_13_14` |
+| H-35 | `data/local/migration/DatabaseMigrations.kt` | `MIGRATION_13_14` (tabella `station_artwork_cache`) in `ALL_MIGRATIONS` |
+| H-36 | `di/AppModule.kt` | `LastFmRetrofit` (senza logging), `LastFmApiService`, `StationArtworkCacheDao` |
+| H-37 | `di/RepositoryModule.kt` | binding `StationArtworkRepositoryImpl` → `StationArtworkRepository` |
+| H-38 | `data/remote/ITunesApiService.kt` + `dto/ITunesSearchResponse.kt` | `searchAlbum(...)` e campo `collectionName` |
+| H-39 | `domain/model/AppPreferences.kt` + `domain/repository/SettingsRepository.kt` + `data/repository/SettingsRepositoryImpl.kt` | `autoArtworkEnabled` (default **false**), `autoArtworkWifiOnly` (default true), chiavi DataStore e setter |
+| H-40 | `ui/shared/viewmodels/SettingsViewModel.kt` | `setAutoArtworkEnabled`, `setAutoArtworkWifiOnly`, `clearArtworkCache` + scheduler nei costruttori |
+| H-41 | `ui/mobile/screens/settings/SettingsScreen.kt` | toggle Copertine automatiche / Solo Wi-Fi e pulsante di reset (dentro `AppearanceSection`) |
+| H-42 | `custom/artwork/StationArtwork.kt` | lettura `StationArtworkStore` via `StationArtworkEntryPoint` per mostrare le copertine arricchite |
+| H-43 | `res/values/strings_custom.xml`, `res/values-it/strings_custom.xml` | stringhe `settings_auto_artwork_*` |
+| H-44 | `app/src/test/.../FakeSettingsRepository.kt`, `BrowseViewModelTest.kt`, `RecordingPlaybackControllerTest.kt` | implementazioni stub dei due nuovi setter |
 
 ---
 
@@ -335,6 +351,22 @@ Verifica che questi punti esistano ancora dopo un pull (sono pochi e tutti picco
   PNG a Media3/notifica/widget. Non esportato e **senza rete** (non è un proxy come `SvgProxyProvider`).
 - `app/src/test/java/com/armanmaurya/internetradio/custom/artwork/StationAvatarTest.kt` — test di
   determinismo, iniziali e contrasto del testo.
+- `data/local/entity/StationArtworkCacheEntity.kt` + `data/local/dao/StationArtworkCacheDao.kt` —
+  cache persistente separata da `favicon`, con TTL (positivo 30 gg, negativo 1 h).
+- `data/remote/LastFmApiService.kt` — `album.search` (risposta come `JsonElement`, key opzionale).
+- `data/remote/artwork/StationArtworkEnrichers.kt` — catena homepage (`og:image`/`twitter:image`/
+  `apple-touch-icon`) → iTunes album → Last.fm, con normalizzazione nomi, soglia di similarità e
+  guardia SSRF (loopback/private/link-local bloccati, redirect manuali max 3, body max 384 KB).
+- `data/repository/StationArtworkRepositoryImpl.kt` + `domain/repository/StationArtworkRepository.kt`
+  — resolve con single-flight (`Mutex`), cache e nessuna scrittura su `favicon`.
+- `data/worker/ArtworkEnrichmentWorker.kt` + `data/worker/ArtworkEnrichmentScheduler.kt` —
+  one-shot `KEEP`, batch 25, backoff esponenziale 30 s, vincolo rete (Wi-Fi o connessa), niente
+  lavoro periodico/expedited.
+- `custom/artwork/StationArtworkStore.kt` + `StationArtworkEntryPoint.kt` — snapshot `StateFlow`
+  della cache per la UI.
+- `app/src/test/java/com/armanmaurya/internetradio/data/remote/artwork/StationArtworkEnrichersTest.kt`
+  — normalizzazione/similarità, parser HTML, upscale iTunes, guardia SSRF.
+- `app/schemas/.../14.json` — schema Room esportato per la migrazione 13→14.
 
 ---
 
@@ -354,3 +386,15 @@ Verifica che questi punti esistano ancora dopo un pull (sono pochi e tutti picco
 ```
 
 5. Se compila, fai un commit di merge e annota qui eventuali patch non più applicabili.
+
+### Chiave Last.fm (opzionale)
+
+L'arricchimento Last.fm è disattivato se la chiave è assente. Per attivarlo, aggiungi in
+`local.properties` (già ignorato da Git, mai in `gradle.properties`):
+
+```properties
+LASTFM_API_KEY=la_tua_chiave
+```
+
+La chiave finisce in `BuildConfig` e non viene loggata (client OkHttp dedicato senza
+`HttpLoggingInterceptor`).

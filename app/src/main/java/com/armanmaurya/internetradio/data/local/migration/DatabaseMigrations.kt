@@ -226,5 +226,28 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL_MIGRATIONS = arrayOf(MIGRATION_3_4, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+    val MIGRATION_13_14 = object : Migration(13, 14) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `station_artwork_cache` (
+                    `stationUuid` TEXT NOT NULL,
+                    `resolvedUrl` TEXT,
+                    `source` TEXT NOT NULL,
+                    `fetchedAt` INTEGER NOT NULL,
+                    `expiresAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`stationUuid`)
+                )
+                """.trimIndent()
+            )
+        }
+    }
+
+    val ALL_MIGRATIONS = arrayOf(
+        MIGRATION_3_4,
+        MIGRATION_10_11,
+        MIGRATION_11_12,
+        MIGRATION_12_13,
+        MIGRATION_13_14
+    )
 }

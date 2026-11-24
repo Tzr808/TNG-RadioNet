@@ -389,6 +389,8 @@ class RecordingPlaybackControllerTest {
         override suspend fun setKeepScreenOn(enabled: Boolean) {}
         override suspend fun setWidgetBackgroundAlpha(alpha: Float) {}
         override suspend fun setShowStationThumbnails(enabled: Boolean) {}
+        override suspend fun setAutoArtworkEnabled(enabled: Boolean) {}
+        override suspend fun setAutoArtworkWifiOnly(enabled: Boolean) {}
         override suspend fun setLyricsProviderOrder(order: List<String>) {}
         override suspend fun setLyricsProviderEnabled(providerId: String, enabled: Boolean) {}
 

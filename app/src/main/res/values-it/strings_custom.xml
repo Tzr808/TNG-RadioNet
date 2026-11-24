@@ -9,6 +9,14 @@
     <string name="settings_pure_black_title">Pure Black</string>
     <string name="settings_pure_black_desc">Usa sfondo nero puro in modalità scura</string>
 
+    <!-- Copertine automatiche (online, opt-in) -->
+    <string name="settings_auto_artwork_title">Copertine automatiche</string>
+    <string name="settings_auto_artwork_desc">Cerca un\'immagine online per le stazioni senza logo. Il nome della stazione viene inviato a cataloghi pubblici (homepage, iTunes, Last.fm). Disattivato per default.</string>
+    <string name="settings_auto_artwork_wifi_title">Solo Wi-Fi</string>
+    <string name="settings_auto_artwork_wifi_desc">Scarica le copertine automatiche solo su reti non a consumo</string>
+    <string name="settings_auto_artwork_clear">Cancella copertine automatiche</string>
+    <string name="settings_auto_artwork_cleared">Copertine automatiche cancellate</string>
+
     <!-- Buffer level -->
     <string name="settings_buffer_level">Livello buffer</string>
     <string name="settings_buffer_standard">Standard (Predefinito)</string>

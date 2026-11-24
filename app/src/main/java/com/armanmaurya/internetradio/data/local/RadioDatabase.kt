@@ -14,7 +14,9 @@ import com.armanmaurya.internetradio.data.local.dao.ScheduleDao
 import com.armanmaurya.internetradio.data.local.dao.StationDao
 import com.armanmaurya.internetradio.data.local.dao.TrackHistoryDao
 import com.armanmaurya.internetradio.data.local.dao.StarredTrackDao
+import com.armanmaurya.internetradio.data.local.dao.StationArtworkCacheDao
 import com.armanmaurya.internetradio.data.local.entity.RecentStationEntity
+import com.armanmaurya.internetradio.data.local.entity.StationArtworkCacheEntity
 import com.armanmaurya.internetradio.data.local.entity.ScheduleEntity
 import com.armanmaurya.internetradio.data.local.entity.StationEntity
 import com.armanmaurya.internetradio.data.local.entity.TrackHistoryEntity
@@ -27,9 +29,10 @@ import com.armanmaurya.internetradio.data.local.migration.DatabaseMigrations
         RecentStationEntity::class,
         TrackHistoryEntity::class,
         ScheduleEntity::class,
-        StarredTrackEntity::class
+        StarredTrackEntity::class,
+        StationArtworkCacheEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2, spec = RadioDatabase.Migration1To2Spec::class),
@@ -74,11 +77,13 @@ abstract class RadioDatabase : RoomDatabase() {
     abstract val trackHistoryDao: TrackHistoryDao
     abstract val starredTrackDao: StarredTrackDao
     abstract val scheduleDao: ScheduleDao
+    abstract val stationArtworkCacheDao: StationArtworkCacheDao
 
     companion object {
         val MIGRATION_3_4 = DatabaseMigrations.MIGRATION_3_4
         val MIGRATION_10_11 = DatabaseMigrations.MIGRATION_10_11
         val MIGRATION_11_12 = DatabaseMigrations.MIGRATION_11_12
         val MIGRATION_12_13 = DatabaseMigrations.MIGRATION_12_13
+        val MIGRATION_13_14 = DatabaseMigrations.MIGRATION_13_14
     }
 }

@@ -9,8 +9,10 @@ import com.armanmaurya.internetradio.domain.model.AppPreferences
 import com.armanmaurya.internetradio.domain.model.BufferLevel
 import com.armanmaurya.internetradio.domain.model.RecordingTimeFormat
 import com.armanmaurya.internetradio.domain.model.StartOfWeek
+import com.armanmaurya.internetradio.data.worker.ArtworkEnrichmentScheduler
 import com.armanmaurya.internetradio.domain.repository.RecentRepository
 import com.armanmaurya.internetradio.domain.repository.SettingsRepository
+import com.armanmaurya.internetradio.domain.repository.StationArtworkRepository
 import com.armanmaurya.internetradio.ui.shared.theme.AppColor
 import com.armanmaurya.internetradio.ui.shared.theme.AppTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,6 +33,8 @@ class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val recentRepository: RecentRepository,
     private val widgetController: WidgetController,
+    private val stationArtworkRepository: StationArtworkRepository,
+    private val artworkEnrichmentScheduler: ArtworkEnrichmentScheduler,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -135,6 +139,26 @@ class SettingsViewModel @Inject constructor(
     fun setShowStationThumbnails(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setShowStationThumbnails(enabled)
+        }
+    }
+
+    fun setAutoArtworkEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setAutoArtworkEnabled(enabled)
+            artworkEnrichmentScheduler.scheduleIfEnabled()
+        }
+    }
+
+    fun setAutoArtworkWifiOnly(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setAutoArtworkWifiOnly(enabled)
+            artworkEnrichmentScheduler.scheduleIfEnabled()
+        }
+    }
+
+    fun clearArtworkCache() {
+        viewModelScope.launch {
+            stationArtworkRepository.clearAll()
         }
     }
 

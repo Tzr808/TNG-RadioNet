@@ -49,6 +49,10 @@ data class AppPreferences(
     val alarmVolumeTransitionSeconds: Int = 15,
     val widgetBackgroundAlpha: Float = 1.0f,
     val showStationThumbnails: Boolean = true,
+    /** Copertine automatiche online per le stazioni senza favicon (opt-in, default OFF). */
+    val autoArtworkEnabled: Boolean = false,
+    /** Limita il download delle copertine automatiche alle reti non a consumo. */
+    val autoArtworkWifiOnly: Boolean = true,
     val lyricsProviderOrder: List<String> = listOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib"),
     val enabledLyricsProviders: Set<String> = setOf("betterlyrics", "unison", "lyricsplus", "kugou", "lrclib"),
     /** Livello di buffer per l'ExoPlayer (STANDARD o HIGH). */

@@ -134,6 +134,28 @@ object AppModule {
 
     @Provides
     @Singleton
+    @Named("LastFmRetrofit")
+    fun provideLastFmRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        // Last.fm richiede l'API key come query param: niente logging, altrimenti finirebbe in logcat.
+        val clientWithoutLogging = okHttpClient.newBuilder().apply {
+            interceptors().removeAll { it is HttpLoggingInterceptor }
+        }.build()
+        return Retrofit.Builder()
+            .baseUrl("https://ws.audioscrobbler.com/")
+            .client(clientWithoutLogging)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideLastFmApiService(
+        @Named("LastFmRetrofit") retrofit: Retrofit
+    ): com.armanmaurya.internetradio.data.remote.LastFmApiService =
+        retrofit.create(com.armanmaurya.internetradio.data.remote.LastFmApiService::class.java)
+
+    @Provides
+    @Singleton
     fun provideRadioDatabase(@ApplicationContext context: Context): RadioDatabase =
         Room.databaseBuilder(
             context,
@@ -167,4 +189,11 @@ object AppModule {
     @Singleton
     fun provideScheduleDao(database: RadioDatabase): com.armanmaurya.internetradio.data.local.dao.ScheduleDao =
         database.scheduleDao
+
+    @Provides
+    @Singleton
+    fun provideStationArtworkCacheDao(
+        database: RadioDatabase
+    ): com.armanmaurya.internetradio.data.local.dao.StationArtworkCacheDao =
+        database.stationArtworkCacheDao
 }

@@ -84,6 +84,8 @@ class SettingsRepositoryImpl @Inject constructor(
         val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
         val WIDGET_BACKGROUND_ALPHA = androidx.datastore.preferences.core.floatPreferencesKey("widget_background_alpha")
         val SHOW_STATION_THUMBNAILS = booleanPreferencesKey("show_station_thumbnails")
+        val AUTO_ARTWORK_ENABLED = booleanPreferencesKey("auto_artwork_enabled")
+        val AUTO_ARTWORK_WIFI_ONLY = booleanPreferencesKey("auto_artwork_wifi_only")
         val LYRICS_PROVIDER_ORDER = stringPreferencesKey("lyrics_provider_order")
         val ENABLED_LYRICS_PROVIDERS = androidx.datastore.preferences.core.stringSetPreferencesKey("enabled_lyrics_providers")
         val BUFFER_LEVEL = stringPreferencesKey("buffer_level")
@@ -163,6 +165,8 @@ class SettingsRepositoryImpl @Inject constructor(
             val alarmVolumeTransitionSeconds = preferences[PreferencesKeys.ALARM_VOLUME_TRANSITION_SECONDS] ?: 15
             val widgetBackgroundAlpha = preferences[PreferencesKeys.WIDGET_BACKGROUND_ALPHA] ?: 1.0f
             val showStationThumbnails = preferences[PreferencesKeys.SHOW_STATION_THUMBNAILS] ?: true
+            val autoArtworkEnabled = preferences[PreferencesKeys.AUTO_ARTWORK_ENABLED] ?: false
+            val autoArtworkWifiOnly = preferences[PreferencesKeys.AUTO_ARTWORK_WIFI_ONLY] ?: true
             val isPureBlackEnabled = preferences[PreferencesKeys.PURE_BLACK_ENABLED] ?: false
 
             AppPreferences(
@@ -209,6 +213,8 @@ class SettingsRepositoryImpl @Inject constructor(
                 alarmVolumeTransitionSeconds = alarmVolumeTransitionSeconds,
                 widgetBackgroundAlpha = widgetBackgroundAlpha,
                 showStationThumbnails = showStationThumbnails,
+                autoArtworkEnabled = autoArtworkEnabled,
+                autoArtworkWifiOnly = autoArtworkWifiOnly,
                 isPureBlackEnabled = isPureBlackEnabled,
                 lyricsProviderOrder = preferences[PreferencesKeys.LYRICS_PROVIDER_ORDER]
                     ?.split(",")?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }
@@ -464,6 +470,18 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setShowStationThumbnails(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SHOW_STATION_THUMBNAILS] = enabled
+        }
+    }
+
+    override suspend fun setAutoArtworkEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.AUTO_ARTWORK_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun setAutoArtworkWifiOnly(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.AUTO_ARTWORK_WIFI_ONLY] = enabled
         }
     }
 

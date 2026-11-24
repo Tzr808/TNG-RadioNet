@@ -37,6 +37,11 @@ abstract class RepositoryModule {
     ): CoverArtRepository
 
     @Binds
+    abstract fun bindStationArtworkRepository(
+        impl: com.armanmaurya.internetradio.data.repository.StationArtworkRepositoryImpl
+    ): com.armanmaurya.internetradio.domain.repository.StationArtworkRepository
+
+    @Binds
     abstract fun bindLibraryRepository(
         impl: LibraryRepositoryImpl
     ): LibraryRepository

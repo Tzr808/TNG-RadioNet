@@ -9,6 +9,14 @@
     <string name="settings_pure_black_title">Pure Black</string>
     <string name="settings_pure_black_desc">Use pure black background in dark mode</string>
 
+    <!-- Auto artwork (online, opt-in) -->
+    <string name="settings_auto_artwork_title">Automatic cover art</string>
+    <string name="settings_auto_artwork_desc">Try to find an online image for stations without a logo. Station names are sent to public catalogues (homepage, iTunes, Last.fm). Off by default.</string>
+    <string name="settings_auto_artwork_wifi_title">Wi-Fi only</string>
+    <string name="settings_auto_artwork_wifi_desc">Download automatic cover art only on unmetered networks</string>
+    <string name="settings_auto_artwork_clear">Clear automatic cover art</string>
+    <string name="settings_auto_artwork_cleared">Automatic cover art cleared</string>
+
     <!-- Buffer level -->
     <string name="settings_buffer_level">Buffer Level</string>
     <string name="settings_buffer_standard">Standard (Default)</string>

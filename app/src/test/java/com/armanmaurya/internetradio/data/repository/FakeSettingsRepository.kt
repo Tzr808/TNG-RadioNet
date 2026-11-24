@@ -57,6 +57,8 @@ internal class FakeSettingsRepository : SettingsRepository {
     override suspend fun setKeepScreenOn(enabled: Boolean) {}
     override suspend fun setWidgetBackgroundAlpha(alpha: Float) {}
     override suspend fun setShowStationThumbnails(enabled: Boolean) {}
+    override suspend fun setAutoArtworkEnabled(enabled: Boolean) {}
+    override suspend fun setAutoArtworkWifiOnly(enabled: Boolean) {}
     override suspend fun setLyricsProviderOrder(order: List<String>) {
         prefsFlow.value = prefsFlow.value.copy(lyricsProviderOrder = order)
     }

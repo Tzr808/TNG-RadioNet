@@ -1,4 +1,15 @@
 import java.nio.file.Files
+import java.util.Properties
+
+// Chiave Last.fm opzionale: mai committata, letta da local.properties (ignorato da Git).
+val lastFmApiKey: String = run {
+    val properties = Properties()
+    val localProperties = rootProject.file("local.properties")
+    if (localProperties.exists()) {
+        localProperties.inputStream().use { properties.load(it) }
+    }
+    properties.getProperty("LASTFM_API_KEY").orEmpty()
+}
 
 plugins {
     alias(libs.plugins.android.application)
@@ -50,6 +61,12 @@ android {
         }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField(
+            "String",
+            "LASTFM_API_KEY",
+            "\"${lastFmApiKey.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+        )
     }
 
     signingConfigs {
@@ -118,6 +135,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -154,6 +172,10 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
     ksp(libs.kotlin.metadata.jvm)
+
+    implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

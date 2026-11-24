@@ -55,6 +55,8 @@ interface SettingsRepository {
     suspend fun setKeepScreenOn(enabled: Boolean)
     suspend fun setWidgetBackgroundAlpha(alpha: Float)
     suspend fun setShowStationThumbnails(enabled: Boolean)
+    suspend fun setAutoArtworkEnabled(enabled: Boolean)
+    suspend fun setAutoArtworkWifiOnly(enabled: Boolean)
     suspend fun setLyricsProviderOrder(order: List<String>)
     suspend fun setLyricsProviderEnabled(providerId: String, enabled: Boolean)
     /** Imposta il livello di buffer per l'ExoPlayer. */

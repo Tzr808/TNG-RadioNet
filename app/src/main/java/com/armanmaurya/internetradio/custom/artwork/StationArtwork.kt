@@ -5,6 +5,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -16,6 +18,7 @@ import coil3.request.ImageRequest
 import com.armanmaurya.internetradio.R
 import com.armanmaurya.internetradio.core.provider.StationAvatarProvider
 import com.armanmaurya.internetradio.domain.model.RadioStation
+import dagger.hilt.android.EntryPointAccessors
 
 /** `content://` URI of the generated avatar (usable by Compose, Coil, Glance, Media3). */
 fun stationAvatarUri(context: Context, name: String, key: String): String =
@@ -25,9 +28,18 @@ fun stationAvatarUri(context: Context, name: String, key: String): String =
  * Single source of truth for station artwork outside Compose:
  * the user-provided favicon when present, the generated avatar otherwise.
  */
-fun stationArtworkUrl(context: Context, station: RadioStation): String =
-    station.favicon.takeIf { it.isNotBlank() }
+fun stationArtworkUrl(context: Context, station: RadioStation): String {
+    val cached = runCatching {
+        EntryPointAccessors
+            .fromApplication(context.applicationContext, StationArtworkEntryPoint::class.java)
+            .store()
+            .current()[station.stationUuid]
+    }.getOrNull()
+
+    return station.favicon.takeIf { it.isNotBlank() }
+        ?: cached?.takeIf { it.isNotBlank() }
         ?: stationAvatarUri(context, station.name, station.stationUuid)
+}
 
 /**
  * Station thumbnail used by every list/grid.
@@ -44,9 +56,25 @@ fun StationArtworkImage(
     modifier: Modifier = Modifier,
     showThumbnails: Boolean = true,
 ) {
+    val context = LocalContext.current
+    val store = remember(context.applicationContext) {
+        runCatching {
+            EntryPointAccessors
+                .fromApplication(context.applicationContext, StationArtworkEntryPoint::class.java)
+                .store()
+        }.getOrNull()
+    }
+    val artworkMap: Map<String, String> = if (store != null) {
+        val state by store.artwork.collectAsState()
+        state
+    } else {
+        emptyMap()
+    }
+    val resolved = artworkMap[station.stationUuid]
+
     StationArtworkImage(
         name = station.name,
-        favicon = station.favicon,
+        favicon = station.favicon.ifBlank { resolved.orEmpty() },
         artworkKey = station.stationUuid,
         contentDescription = contentDescription,
         contentScale = contentScale,
