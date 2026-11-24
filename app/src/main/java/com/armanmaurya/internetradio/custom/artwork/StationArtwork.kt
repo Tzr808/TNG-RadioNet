@@ -36,8 +36,7 @@ fun stationArtworkUrl(context: Context, station: RadioStation): String {
             .current()[station.stationUuid]
     }.getOrNull()
 
-    return station.favicon.takeIf { it.isNotBlank() }
-        ?: cached?.takeIf { it.isNotBlank() }
+    return cached?.takeIf { it.isNotBlank() } ?: station.favicon.takeIf { it.isNotBlank() }
         ?: stationAvatarUri(context, station.name, station.stationUuid)
 }
 
@@ -74,7 +73,7 @@ fun StationArtworkImage(
 
     StationArtworkImage(
         name = station.name,
-        favicon = station.favicon.ifBlank { resolved.orEmpty() },
+        favicon = resolved.orEmpty().ifBlank { station.favicon },
         artworkKey = station.stationUuid,
         contentDescription = contentDescription,
         contentScale = contentScale,
