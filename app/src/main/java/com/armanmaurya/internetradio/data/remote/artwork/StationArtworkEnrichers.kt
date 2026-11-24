@@ -96,7 +96,7 @@ object NetworkUrlGuard {
 object StationNameMatcher {
 
     private val DIACRITICS = Regex("\\p{M}+")
-    private val STOP_WORDS = Regex("\\b(radio|fm|am|web|official|live|stream|music|tv)\\b")
+    private val STOP_WORDS = Regex("\\b(fm|am|web|official|live|stream|music|tv)\\b")
     private val NON_ALNUM = Regex("[^a-z0-9]+")
     private val SPACES = Regex("\\s+")
 
@@ -110,7 +110,15 @@ object StationNameMatcher {
             .trim()
     }
 
-    fun searchTerm(name: String): String = normalize(name).ifBlank { name.trim() }
+    fun searchTerm(name: String): String {
+        val normalized = normalize(name)
+        if (normalized.isBlank()) return name.trim()
+        // Fallback to original name if the normalized term is too short/generic
+        if (normalized.split(' ').size < 2 && normalized.length < 5) {
+            return name.trim()
+        }
+        return normalized
+    }
 
     fun similarity(first: String, second: String?): Double {
         val firstTokens = normalize(first).split(' ').filter { it.length > 1 }.toSet()
