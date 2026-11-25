@@ -11,6 +11,41 @@ val lastFmApiKey: String = run {
     properties.getProperty("LASTFM_API_KEY").orEmpty()
 }
 
+// Versione dinamica: <baseVersion>.<buildBase + commit dopo l'ultima modifica di version.properties>
+val versionProperties = Properties().apply {
+    val file = rootProject.file("version.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val baseVersion = versionProperties.getProperty("baseVersion", "1.0.0").trim()
+val buildBase = versionProperties.getProperty("buildBase", "808").trim().toIntOrNull() ?: 808
+
+fun gitOutput(vararg args: String): String? = try {
+    val process = ProcessBuilder(listOf("git") + args)
+        .directory(rootProject.projectDir)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
+    if (process.waitFor() == 0) output else null
+} catch (_: Exception) {
+    null
+}
+
+// Baseline = ultimo commit che ha toccato version.properties (0 se non ancora committato).
+val versionFileBaseline = gitOutput("log", "-1", "--format=%H", "--", "version.properties")
+val commitsSinceVersionFile = versionFileBaseline
+    ?.takeIf { it.isNotBlank() }
+    ?.let { gitOutput("rev-list", "--count", "$it..HEAD")?.toIntOrNull() }
+    ?: 0
+val versionBuildNumber = (buildBase + commitsSinceVersionFile).let { candidate ->
+    if (candidate > 999) {
+        logger.warn("version.properties: contatore $candidate > 999, limitato a 999. Aggiorna version.properties.")
+        999
+    } else {
+        candidate
+    }
+}
+val dynamicVersionName = "$baseVersion.${versionBuildNumber.toString().padStart(3, '0')}"
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -51,8 +86,9 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 19
-        // Versione del fork TNG RadioNet (mostrata in Impostazioni → About)
-        versionName = "1.0.0.01"
+        // Versione del fork TNG RadioNet (mostrata in Impostazioni → About).
+        // Calcolata da version.properties: baseVersion + commit dopo l'ultimo aggiornamento del file.
+        versionName = dynamicVersionName
 
         if (System.getenv("IS_NIGHTLY_BUILD") == "true") {
             versionCode = (versionCode ?: 18) + (System.getenv("NIGHTLY_RUN_NUMBER")?.toIntOrNull() ?: 0)

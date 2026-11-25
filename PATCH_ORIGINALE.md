@@ -296,7 +296,7 @@ Verifica che questi punti esistano ancora dopo un pull (sono pochi e tutti picco
 | H-14 | `domain/controller/PlayerController.kt` | `fun releaseController() {}` (default no-op) |
 | H-15 | `ui/mobile/MobileActivity.kt` | injection di `PlayerController` + `releaseController()` in `onDestroy()` quando `isFinishing && !isChangingConfigurations && !handedOverToTv` |
 | H-16 | `ui/mobile/screens/player/PlayerSheet.kt` | parametro `onStartCastDiscovery` chiamato quando si apre il dialog Cast |
-| H-17 | `app/build.gradle.kts` | `versionName = "1.0.0.01"` (versione del fork TNG) |
+| H-17 | `app/build.gradle.kts` | `versionName = dynamicVersionName` (prima era la costante `"1.0.0.01"`): versione del fork TNG calcolata da `version.properties` (vedi sezione 2.2) |
 | H-18 | `main/AndroidManifest.xml` | `android:label="TNG RadioNet"` su `<application>`, `MobileActivity`, `TvActivity`, `NowPlayingDreamService` (label letterale: vince sulle traduzioni di `app_name`) |
 | H-19 | `ui/mobile/screens/settings/SettingsScreen.kt` | al posto di `CommunitySection()` + `AboutSection(...)` + `DonateSection()` c'è la sola chiamata a `custom.about.TngAboutSection(versionName = ...)`. Le tre funzioni originali restano nel file ma non sono più chiamate |
 | H-20 | `ui/tv/screens/about/AboutScreen.kt` | al posto di descrizione + author card + contributors + pulsante GitHub c'è il blocco attribuzione (`about_tng_based_on` / `about_tng_author` / `about_tng_available_on` / `about_tng_github`) |
@@ -346,6 +346,30 @@ non scrive nulla in `favicon`:
 4. `station_artwork_cache` resta l'unica persistenza dell'artwork automatico; `favicon` continua a
    contenere solo l'input dell'utente.
 
+### 2.2 Versione dinamica (`version.properties`)
+
+La versione mostrata in Impostazioni/About non è più statica: viene calcolata in
+`app/build.gradle.kts` (hook H-17) leggendo il file `version.properties` nella radice del progetto.
+
+Formato: **`baseVersion` + `.` + ultimo blocco a 3 cifre**.
+
+- `baseVersion` = primi tre numeri, **scelti a mano** dall'utente (es. `1.1.1`).
+- Ultimo blocco = `buildBase` + numero di commit Git fatti **dopo l'ultima modifica di
+  `version.properties`**, con `padStart(3, '0')` e tetto massimo `999`.
+- La baseline è ricavata automaticamente con
+  `git log -1 --format=%H -- version.properties`; non serve inserire hash a mano.
+
+Come indicare i primi tre numeri:
+
+1. Apri `version.properties` nella radice.
+2. Modifica `baseVersion=1.1.1` con i numeri desiderati (es. `1.2.0`).
+3. Commit del file: da quel momento il contatore riparte da `buildBase` (default `808`).
+4. Per far ripartire il suffisso da un altro valore, cambia anche `buildBase`.
+
+Esempio: con `baseVersion=1.1.1` e `buildBase=808`, subito dopo il commit che tocca il file la
+versione è `1.1.1.808`; dopo 3 commit diventa `1.1.1.811`.
+Se `git` non è disponibile (build da tarball/senza repository) il contatore resta `buildBase`.
+
 ---
 
 ## 3. File nuovi (non richiedono patch, vivono fuori dal codice dell'autore)
@@ -388,6 +412,7 @@ non scrive nulla in `favicon`:
 - `app/src/test/java/com/armanmaurya/internetradio/data/remote/artwork/StationArtworkEnrichersTest.kt`
   — normalizzazione/similarità, parser HTML, upscale iTunes, guardia SSRF.
 - `app/schemas/.../14.json` — schema Room esportato per la migrazione 13→14.
+- `version.properties` — base della versione dinamica (`baseVersion`, `buildBase`), vedi sezione 2.2.
 
 ---
 
