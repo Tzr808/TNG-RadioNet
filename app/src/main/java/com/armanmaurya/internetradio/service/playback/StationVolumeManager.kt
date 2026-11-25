@@ -183,8 +183,8 @@ class StationVolumeManager(
         AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET -> 0
         AudioDeviceInfo.TYPE_USB_HEADSET, AudioDeviceInfo.TYPE_USB_DEVICE -> 1
         AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, AudioDeviceInfo.TYPE_BLE_HEADSET -> 2
-        AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> 5
-        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> PRIORITY_BUILTIN_SPEAKER
+        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> 5
+        AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> 6
         else -> 9
     }
 
@@ -262,6 +262,6 @@ class StationVolumeManager(
         const val DEBOUNCE_MS = 300L
         const val SPEAKER_KEY = "speaker"
         const val SPEAKER_LABEL = "Altoparlante Telefono"
-        const val PRIORITY_BUILTIN_SPEAKER = 10
+        const val PRIORITY_BUILTIN_SPEAKER = 7
     }
 }
