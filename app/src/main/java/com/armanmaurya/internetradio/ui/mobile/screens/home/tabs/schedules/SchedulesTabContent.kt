@@ -108,6 +108,7 @@ fun SchedulesTabContent(
                         ScheduleItem(
                             schedule = schedule,
                             stationFavicon = stationFavicon,
+                            artworkKey = schedule.stationUuid,
                             startOfWeek = appPreferences.startOfWeek,
                             onToggle = { isEnabled -> viewModel.toggleSchedule(schedule, isEnabled) },
                             onClick = { onEditSchedule(schedule.id) }
@@ -145,6 +146,7 @@ fun SchedulesTabContent(
                         ScheduleItem(
                             schedule = schedule,
                             stationFavicon = stationFavicon,
+                            artworkKey = schedule.stationUuid,
                             startOfWeek = appPreferences.startOfWeek,
                             onToggle = { isEnabled -> viewModel.toggleSchedule(schedule, isEnabled) },
                             onClick = { onEditSchedule(schedule.id) }

@@ -6,6 +6,8 @@ import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.armanmaurya.internetradio.core.provider.SvgProxyProvider
+import com.armanmaurya.internetradio.custom.artwork.cachedStationArtwork
+import com.armanmaurya.internetradio.custom.artwork.stationArtworkSource
 import com.armanmaurya.internetradio.custom.artwork.stationAvatarUri
 import com.armanmaurya.internetradio.domain.model.RadioStation
 import com.google.gson.Gson
@@ -36,10 +38,12 @@ fun RadioStation.toMediaItem(
     parentId: String? = null,
     showThumbnails: Boolean = true
 ): MediaItem {
+    val artworkSource = stationArtworkSource(context, this)
     val artworkUriStr = when {
         !showThumbnails -> null
-        favicon.endsWith(".svg", ignoreCase = true) -> SvgProxyProvider.createProxyUri(context, favicon)
-        favicon.isNotBlank() -> favicon
+        artworkSource?.endsWith(".svg", ignoreCase = true) == true ->
+            SvgProxyProvider.createProxyUri(context, artworkSource)
+        artworkSource != null -> artworkSource
         else -> null
     }
     val artworkUri = if (!showThumbnails) {
@@ -63,7 +67,7 @@ fun RadioStation.toMediaItem(
                 .setIsPlayable(true)
                 .setExtras(Bundle().apply {
                     putString("stationName", name)
-                    putString("stationFavicon", favicon)
+                    putString("stationFavicon", artworkSource ?: favicon)
                     putString(EXTRA_STATION_JSON, this@toMediaItem.toJson())
                 })
                 .build()
@@ -87,10 +91,13 @@ fun createStationMediaItem(
     stationJson: String? = null,
     showThumbnails: Boolean = true
 ): MediaItem {
+    val artworkSource = cachedStationArtwork(context, stationUuid)
+        ?: stationFavicon.takeIf { it.isNotBlank() }
     val artworkUriStr = when {
         !showThumbnails -> null
-        stationFavicon.endsWith(".svg", ignoreCase = true) -> SvgProxyProvider.createProxyUri(context, stationFavicon)
-        stationFavicon.isNotBlank() -> stationFavicon
+        artworkSource?.endsWith(".svg", ignoreCase = true) == true ->
+            SvgProxyProvider.createProxyUri(context, artworkSource)
+        artworkSource != null -> artworkSource
         else -> null
     }
     val artworkUri = if (!showThumbnails) {
@@ -111,12 +118,12 @@ fun createStationMediaItem(
                 .setArtworkUri(artworkUri)
                 .setExtras(Bundle().apply {
                     putString("stationName", stationName)
-                    putString("stationFavicon", stationFavicon)
+                    putString("stationFavicon", artworkSource ?: stationFavicon)
                     putBoolean(EXTRA_SCHEDULED_PLAYBACK, true)
                     putString(EXTRA_STATION_JSON, stationJson)
                 })
                 .build()
         )
-        .setTag(stationFavicon)
+        .setTag(artworkSource ?: stationFavicon)
         .build()
 }

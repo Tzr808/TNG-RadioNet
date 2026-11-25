@@ -16,6 +16,7 @@ import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import com.armanmaurya.internetradio.R
 import com.armanmaurya.internetradio.core.provider.SvgProxyProvider
+import com.armanmaurya.internetradio.custom.artwork.stationArtworkSource
 import com.armanmaurya.internetradio.domain.controller.ShortcutController
 import com.armanmaurya.internetradio.domain.controller.ShortcutController.Companion.ACTION_PLAY_STATION
 import com.armanmaurya.internetradio.domain.controller.ShortcutController.Companion.EXTRA_STATION_UUID
@@ -75,13 +76,14 @@ class ShortcutControllerImpl @Inject constructor(
                     return@withLock
                 }
 
-                val icon = loadIcon(station.favicon)
+                val artwork = stationArtworkSource(context, station).orEmpty()
+                val icon = loadIcon(artwork)
                 val shortcut = buildShortcut(
                     id = "$SHORTCUT_ID_PREFIX${station.stationUuid}",
                     station = station,
                     icon = icon ?: IconCompat.createWithResource(context, R.mipmap.ic_launcher),
                     // Left unset when the logo failed to load, so the next sync retries it
-                    storedFavicon = station.favicon.takeIf { icon != null }
+                    storedFavicon = artwork.takeIf { icon != null }
                 )
                 ShortcutManagerCompat.requestPinShortcut(context, shortcut, null)
             }
@@ -119,7 +121,8 @@ class ShortcutControllerImpl @Inject constructor(
 
         val outdated = pinned.mapNotNull { shortcut ->
             val station = library[shortcut.stationUuid] ?: return@mapNotNull null
-            val isOutdated = shortcut.storedName != station.name || shortcut.storedFavicon != station.favicon
+            val artwork = stationArtworkSource(context, station).orEmpty()
+            val isOutdated = shortcut.storedName != station.name || shortcut.storedFavicon != artwork
             if (isOutdated) shortcut to station else null
         }
         if (outdated.isNotEmpty()) {
@@ -130,14 +133,15 @@ class ShortcutControllerImpl @Inject constructor(
     /** Rewrites label, intent and (when the logo changed) icon, keeping each shortcut's id. */
     private suspend fun refreshShortcuts(shortcuts: List<Pair<ShortcutInfoCompat, RadioStation>>) {
         val updates = shortcuts.map { (shortcut, station) ->
-            val faviconChanged = shortcut.storedFavicon != station.favicon
+            val artwork = stationArtworkSource(context, station).orEmpty()
+            val faviconChanged = shortcut.storedFavicon != artwork
             // A null icon leaves the current one in place, so a logo that fails to load keeps the old icon
-            val icon = if (faviconChanged) loadIcon(station.favicon) else null
+            val icon = if (faviconChanged) loadIcon(artwork) else null
             buildShortcut(
                 id = shortcut.id,
                 station = station,
                 icon = icon,
-                storedFavicon = if (!faviconChanged || icon != null) station.favicon else shortcut.storedFavicon
+                storedFavicon = if (!faviconChanged || icon != null) artwork else shortcut.storedFavicon
             )
         }
         if (!ShortcutManagerCompat.updateShortcuts(context, updates)) {

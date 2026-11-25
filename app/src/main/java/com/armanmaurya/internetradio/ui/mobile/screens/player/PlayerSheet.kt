@@ -91,6 +91,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.graphics.FilterQuality
 import coil3.compose.SubcomposeAsyncImage
 import com.armanmaurya.internetradio.R
+import com.armanmaurya.internetradio.custom.artwork.StationArtworkImage
 import com.armanmaurya.internetradio.domain.model.CastDevice
 import com.armanmaurya.internetradio.domain.model.RadioStation
 import com.armanmaurya.internetradio.data.local.entity.TrackHistoryEntity
@@ -798,93 +799,26 @@ fun PlayerSheetContent(
                     }
                 }
 
-                if (appPreferences.showStationThumbnails && pageStation.favicon.isNotBlank()) {
-                    SubcomposeAsyncImage(
-                        model = coil3.request.ImageRequest.Builder(LocalContext.current)
-                            .data(pageStation.favicon.ifBlank { null })
-                            .size(coil3.size.Size.ORIGINAL)
-                            .build(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        filterQuality = FilterQuality.High,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(animatedThumbPadding)
-                            .size(animatedThumbSize)
-                            .clip(RoundedCornerShape(animatedCornerRadius))
-                            .then(
-                                if (isShowingCover) {
-                                    Modifier
-                                        .background(MaterialTheme.colorScheme.surface)
-                                        .border(1.dp / currentScale, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(animatedCornerRadius))
-                                } else {
-                                    Modifier
-                                }
-                            ),
-                        error = {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                            ) {
-                                androidx.compose.foundation.Image(
-                                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                                    contentDescription = null,
-                                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .graphicsLayer { scaleX = 1.6f; scaleY = 1.6f }
-                                )
+                StationArtworkImage(
+                    station = pageStation,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    showThumbnails = appPreferences.showStationThumbnails,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(animatedThumbPadding)
+                        .size(animatedThumbSize)
+                        .clip(RoundedCornerShape(animatedCornerRadius))
+                        .then(
+                            if (isShowingCover) {
+                                Modifier
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .border(1.dp / currentScale, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(animatedCornerRadius))
+                            } else {
+                                Modifier
                             }
-                        },
-                        loading = {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                            ) {
-                                androidx.compose.foundation.Image(
-                                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                                    contentDescription = null,
-                                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .graphicsLayer { scaleX = 1.6f; scaleY = 1.6f }
-                                )
-                            }
-                        }
-                    )
-                } else {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(animatedThumbPadding)
-                            .size(animatedThumbSize)
-                            .clip(RoundedCornerShape(animatedCornerRadius))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .then(
-                                if (isShowingCover) {
-                                    Modifier
-                                        .background(MaterialTheme.colorScheme.surface)
-                                        .border(1.dp / currentScale, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(animatedCornerRadius))
-                                } else {
-                                    Modifier
-                                }
-                            )
-                    ) {
-                        androidx.compose.foundation.Image(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = null,
-                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .graphicsLayer { scaleX = 1.6f; scaleY = 1.6f }
                         )
-                    }
-                }
+                )
             }
         }
         }

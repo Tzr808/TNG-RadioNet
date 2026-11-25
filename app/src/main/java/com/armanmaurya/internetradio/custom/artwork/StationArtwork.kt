@@ -24,21 +24,30 @@ import dagger.hilt.android.EntryPointAccessors
 fun stationAvatarUri(context: Context, name: String, key: String): String =
     StationAvatarProvider.createUri(context, name, key)
 
+private fun artworkStore(context: Context): StationArtworkStore? = runCatching {
+    EntryPointAccessors
+        .fromApplication(context.applicationContext, StationArtworkEntryPoint::class.java)
+        .store()
+}.getOrNull()
+
+/** Enriched artwork already persisted for this station, if any. */
+fun cachedStationArtwork(context: Context, stationUuid: String): String? =
+    artworkStore(context)?.current()?.get(stationUuid)?.takeIf { it.isNotBlank() }
+
+/**
+ * Best available station image URL: enriched cache first, then the user-provided favicon.
+ * Returns `null` when neither exists (callers can then fall back to the generated avatar).
+ */
+fun stationArtworkSource(context: Context, station: RadioStation): String? =
+    cachedStationArtwork(context, station.stationUuid) ?: station.favicon.takeIf { it.isNotBlank() }
+
 /**
  * Single source of truth for station artwork outside Compose:
- * the user-provided favicon when present, the generated avatar otherwise.
+ * the enriched/user-provided image when present, the generated avatar otherwise.
  */
-fun stationArtworkUrl(context: Context, station: RadioStation): String {
-    val cached = runCatching {
-        EntryPointAccessors
-            .fromApplication(context.applicationContext, StationArtworkEntryPoint::class.java)
-            .store()
-            .current()[station.stationUuid]
-    }.getOrNull()
-
-    return cached?.takeIf { it.isNotBlank() } ?: station.favicon.takeIf { it.isNotBlank() }
+fun stationArtworkUrl(context: Context, station: RadioStation): String =
+    stationArtworkSource(context, station)
         ?: stationAvatarUri(context, station.name, station.stationUuid)
-}
 
 /**
  * Station thumbnail used by every list/grid.
@@ -96,6 +105,14 @@ fun StationArtworkImage(
     val context = LocalContext.current
     val avatar = remember(artworkKey, name) { StationAvatarPainter(name, artworkKey) }
     val background = Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
+    val store = remember(context.applicationContext) { artworkStore(context) }
+    val resolvedArtwork: String? = if (store != null) {
+        val artworkMap by store.artwork.collectAsState()
+        artworkMap[artworkKey]
+    } else {
+        null
+    }
+    val effectiveFavicon = resolvedArtwork?.takeIf { it.isNotBlank() } ?: favicon
 
     if (!showThumbnails) {
         Image(
@@ -108,7 +125,7 @@ fun StationArtworkImage(
         return
     }
 
-    if (favicon.isBlank()) {
+    if (effectiveFavicon.isBlank()) {
         Image(
             painter = avatar,
             contentDescription = contentDescription,
@@ -119,7 +136,7 @@ fun StationArtworkImage(
     }
 
     AsyncImage(
-        model = ImageRequest.Builder(context).data(favicon).build(),
+        model = ImageRequest.Builder(context).data(effectiveFavicon).build(),
         contentDescription = contentDescription,
         contentScale = contentScale,
         placeholder = avatar,

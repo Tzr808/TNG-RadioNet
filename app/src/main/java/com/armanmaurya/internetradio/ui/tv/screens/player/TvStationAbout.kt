@@ -49,6 +49,7 @@ import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.armanmaurya.internetradio.R
 import com.armanmaurya.internetradio.core.utils.StateUtils
+import com.armanmaurya.internetradio.custom.artwork.stationArtworkSource
 import com.armanmaurya.internetradio.domain.model.RadioStation
 import java.util.Locale
 
@@ -149,7 +150,7 @@ fun TvStationAboutDialog(
                         modifier = Modifier.padding(start = 12.dp, bottom = 12.dp)
                     ) {
                         AsyncImage(
-                            model = station.favicon.ifBlank { null },
+                            model = stationArtworkSource(LocalContext.current, station),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             error = painterResource(R.drawable.ic_launcher_foreground),

@@ -7,6 +7,7 @@ import android.content.Intent
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import com.armanmaurya.internetradio.custom.artwork.stationArtworkUrl
 import com.armanmaurya.internetradio.domain.controller.WidgetController
 import com.armanmaurya.internetradio.service.PlaybackService
 import dagger.hilt.android.EntryPointAccessors
@@ -41,7 +42,7 @@ class NowPlayingWidgetReceiver : GlanceAppWidgetReceiver() {
                     val lastStation = entryPoint?.recentRepository()?.getAllRecent()?.first()?.firstOrNull()
                     entryPoint?.widgetController()?.cleanStaleWidgetState(
                         stationName = lastStation?.name,
-                        favicon = lastStation?.favicon,
+                        favicon = lastStation?.let { stationArtworkUrl(context, it) },
                         appWidgetIds = appWidgetIds,
                     )
                 } catch (e: Exception) {

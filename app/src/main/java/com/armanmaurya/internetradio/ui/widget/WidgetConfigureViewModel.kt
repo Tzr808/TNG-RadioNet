@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.armanmaurya.internetradio.core.utils.extractPaletteFromBitmap
 import com.armanmaurya.internetradio.core.utils.resolveArtwork
+import com.armanmaurya.internetradio.custom.artwork.stationArtworkUrl
 import com.armanmaurya.internetradio.domain.controller.WidgetController
 import com.armanmaurya.internetradio.domain.model.AppPreferences
 import com.armanmaurya.internetradio.domain.model.RadioStation
@@ -113,7 +114,7 @@ class WidgetConfigureViewModel @Inject constructor(
 
             val candidateArtUrl = latestPayload?.artworkUrl?.takeIf { it.isNotBlank() }
                 ?: loadedPrefs?.get(WidgetPreferenceKeys.ARTWORK_URL)?.takeIf { it.isNotBlank() }
-                ?: lastStation?.favicon
+                ?: lastStation?.let { stationArtworkUrl(context, it) }
             val candidateThumbUrl = latestPayload?.stationThumbnailUrl?.takeIf { it.isNotBlank() }
                 ?: loadedPrefs?.get(WidgetPreferenceKeys.STATION_THUMBNAIL_URL)?.takeIf { it.isNotBlank() }
 
@@ -161,7 +162,7 @@ class WidgetConfigureViewModel @Inject constructor(
                     val lastStation = recentRepository.getAllRecent().first().firstOrNull()
                     widgetController.cleanStaleWidgetState(
                         stationName = lastStation?.name,
-                        favicon = lastStation?.favicon,
+                        favicon = lastStation?.let { stationArtworkUrl(context, it) },
                     )
                 }
                 updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->

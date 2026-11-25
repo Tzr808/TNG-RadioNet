@@ -28,6 +28,7 @@ import com.armanmaurya.internetradio.ui.shared.theme.LocalAppPreferences
 fun ScheduleItem(
     schedule: Schedule,
     stationFavicon: String?,
+    artworkKey: String = schedule.stationUuid,
     startOfWeek: StartOfWeek,
     onToggle: (Boolean) -> Unit,
     onClick: () -> Unit,
@@ -82,6 +83,7 @@ fun ScheduleItem(
                 StationArtworkImage(
                     name = schedule.stationName,
                     favicon = stationFavicon.orEmpty(),
+                    artworkKey = artworkKey,
                     contentDescription = stringResource(R.string.schedule_station_logo_cd),
                     contentScale = ContentScale.Crop,
                     showThumbnails = showThumbnails,

@@ -10,6 +10,7 @@ import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
+import com.armanmaurya.internetradio.custom.artwork.stationArtworkSource
 import com.armanmaurya.internetradio.domain.model.RadioStation
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -52,7 +53,7 @@ class RecordingArtworkStore @Inject constructor(
      * Returns true when new artwork was written.
      */
     suspend fun saveStationArtwork(stationFolderName: String, station: RadioStation): Boolean = mutex.withLock {
-        val favicon = station.favicon.trim()
+        val favicon = stationArtworkSource(context, station)?.trim().orEmpty()
         if (favicon.isBlank()) return@withLock false
 
         val treeUri = folderAccess.grantedTreeUri()

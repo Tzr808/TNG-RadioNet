@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.armanmaurya.internetradio.R
+import com.armanmaurya.internetradio.custom.artwork.stationArtworkUrl
 import com.armanmaurya.internetradio.core.utils.extractPaletteFromBitmap
 import com.armanmaurya.internetradio.core.utils.resolveArtwork
 import com.armanmaurya.internetradio.ui.shared.theme.AppTheme
@@ -92,6 +93,8 @@ class NowPlayingWidgetConfigureActivity : ComponentActivity() {
                     }
                 } else {
                     val lastStation = uiState.lastStation
+                    val artworkContext = LocalContext.current
+                    val lastStationArtwork = lastStation?.let { stationArtworkUrl(artworkContext, it) }
                     val nothingPlayingStr = stringResource(R.string.widget_preview_title)
 
                     val previewTitle = uiState.savedTitle?.takeIf { it.isNotBlank() && it != "Nothing playing" }
@@ -100,9 +103,9 @@ class NowPlayingWidgetConfigureActivity : ComponentActivity() {
                     val previewArtist = uiState.savedArtist?.takeIf { it.isNotBlank() }
                         ?: (if (lastStation != null) "" else stringResource(R.string.widget_preview_artist))
                     val previewArtworkUrl = uiState.savedArtworkUrl?.takeIf { it.isNotBlank() }
-                        ?: lastStation?.favicon
+                        ?: lastStationArtwork
                     val previewStationThumbUrl = uiState.savedStationThumbUrl?.takeIf { it.isNotBlank() }
-                        ?: if (uiState.savedIsCoverArtFetched) lastStation?.favicon else null
+                        ?: if (uiState.savedIsCoverArtFetched) lastStationArtwork else null
 
                     WidgetConfigureScreen(
                         appWidgetId = appWidgetId,

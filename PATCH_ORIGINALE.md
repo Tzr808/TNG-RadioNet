@@ -306,7 +306,7 @@ Verifica che questi punti esistano ancora dopo un pull (sono pochi e tutti picco
 | H-24 | `ui/mobile/screens/home/components/StationListCard.kt` | idem H-23 (thumbnail 56 dp) |
 | H-25 | `ui/tv/components/StationCard.kt` | idem H-23 (card TV) |
 | H-26 | `ui/mobile/screens/schedule/EditScheduleScreen.kt` | idem H-23 (anteprima stazione nello schedule) |
-| H-27 | `ui/mobile/screens/home/tabs/schedules/components/ScheduleItem.kt` | `StationArtworkImage(name = schedule.stationName, favicon = stationFavicon.orEmpty(), ...)` |
+| H-27 | `ui/mobile/screens/home/tabs/schedules/components/ScheduleItem.kt` | `StationArtworkImage(name = schedule.stationName, favicon = stationFavicon.orEmpty(), artworkKey = artworkKey, ...)`; `artworkKey` vale `schedule.stationUuid` |
 | H-28 | `ui/widget/NowPlayingWidget.kt` | fallback `lastStationArtwork = lastStation?.let { stationArtworkUrl(context, it) }` per `artworkUrl` e `stationThumbnailUrl` |
 | H-29 | `app/build.gradle.kts` | `buildConfig = true` + `buildConfigField("String", "LASTFM_API_KEY", ...)` letto da `local.properties` (mai committato) |
 | H-30 | `gradle/libs.versions.toml` | `workRuntime`, `androidxHilt` + librerie `androidx-work-runtime`, `androidx-hilt-work`, `androidx-hilt-compiler` |
@@ -321,9 +321,30 @@ Verifica che questi punti esistano ancora dopo un pull (sono pochi e tutti picco
 | H-39 | `domain/model/AppPreferences.kt` + `domain/repository/SettingsRepository.kt` + `data/repository/SettingsRepositoryImpl.kt` | `autoArtworkEnabled` (default **false**), `autoArtworkWifiOnly` (default true), chiavi DataStore e setter |
 | H-40 | `ui/shared/viewmodels/SettingsViewModel.kt` | `setAutoArtworkEnabled`, `setAutoArtworkWifiOnly`, `clearArtworkCache` + scheduler nei costruttori |
 | H-41 | `ui/mobile/screens/settings/SettingsScreen.kt` | toggle Copertine automatiche / Solo Wi-Fi e pulsante di reset (dentro `AppearanceSection`) |
-| H-42 | `custom/artwork/StationArtwork.kt` | lettura `StationArtworkStore` via `StationArtworkEntryPoint` per mostrare le copertine arricchite |
+| H-42 | `custom/artwork/StationArtwork.kt` | lettura `StationArtworkStore` via `StationArtworkEntryPoint` per mostrare le copertine arricchite; helper `cachedStationArtwork()` e `stationArtworkSource()` |
 | H-43 | `res/values/strings_custom.xml`, `res/values-it/strings_custom.xml` | stringhe `settings_auto_artwork_*` |
 | H-44 | `app/src/test/.../FakeSettingsRepository.kt`, `BrowseViewModelTest.kt`, `RecordingPlaybackControllerTest.kt` | implementazioni stub dei due nuovi setter |
+| H-45 | `custom/artwork/StationArtwork.kt` | overload `StationArtworkImage(name, favicon, artworkKey)` ora consulta lo store per `artworkKey`; `stationArtworkUrl()` delega a `stationArtworkSource()` |
+| H-46 | `ui/mobile/screens/player/PlayerSheet.kt` | la miniatura stazione usa `StationArtworkImage(station = pageStation, ...)` invece di `pageStation.favicon` + icona launcher |
+| H-47 | `ui/tv/screens/player/PlayerScreen.kt`, `ui/tv/screens/home/HomeScreen.kt`, `ui/tv/screens/player/TvStationAbout.kt`, `ui/tv/screensaver/NowPlayingScreensaver.kt` | artwork stazione via `stationArtworkSource(context, station)` |
+| H-48 | `service/playback/MediaItemMapper.kt` | `toMediaItem`/`createStationMediaItem` usano `stationArtworkSource`/`cachedStationArtwork`; extra `stationFavicon` contiene l'URL risolto (notifica, lock screen, widget, Android Auto) |
+| H-49 | `data/repository/LibraryRepositoryImpl.kt` | dopo `addStationToLibrary`/`addCustomStation`, se `favicon` è vuoto esegue `StationArtworkRepository.resolve()` in background (solo se `autoArtworkEnabled`) e schedula il worker |
+| H-50 | `data/shortcut/ShortcutControllerImpl.kt`, `data/recording/RecordingArtworkStore.kt`, `ui/shared/viewmodels/PlayerViewModel.kt`, `ui/widget/WidgetConfigureViewModel.kt`, `ui/widget/NowPlayingWidgetReceiver.kt`, `ui/widget/NowPlayingWidgetConfigureActivity.kt` | icone/artwork da `stationArtworkSource`/`stationArtworkUrl` (shortcut, copertina registrazioni, cast, preview widget) |
+
+### 2.1 Copertine ovunque (fix disallineamento Player Sheet)
+
+Le liste usavano già `StationArtworkImage` (cache arricchita → `favicon` → avatar), mentre il
+Player Sheet leggeva solo `station.favicon` e in assenza mostrava l'icona del launcher. Il fix
+non scrive nulla in `favicon`:
+
+1. `stationArtworkSource()` centralizza la risoluzione (cache → favicon) e lascia `null` quando non
+   esiste nulla, così i chiamanti possono usare l'avatar generato.
+2. Il Player Sheet, le schermate TV, screensaver, Media3, shortcut, registrazioni e widget usano
+   la stessa risoluzione, quindi la copertina appare appena la cache viene popolata.
+3. Al salvataggio di una stazione senza logo, `LibraryRepositoryImpl` chiama `resolve()` in
+   background e schedula il worker: la copertina compare subito senza aspettare il riavvio.
+4. `station_artwork_cache` resta l'unica persistenza dell'artwork automatico; `favicon` continua a
+   contenere solo l'input dell'utente.
 
 ---
 

@@ -82,6 +82,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.armanmaurya.internetradio.R
+import com.armanmaurya.internetradio.custom.artwork.stationArtworkSource
 import com.armanmaurya.internetradio.ui.shared.components.LoadMoreWhenNearEnd
 import com.armanmaurya.internetradio.ui.shared.components.shimmerEffect
 import com.armanmaurya.internetradio.ui.shared.viewmodels.LibraryViewModel
@@ -285,7 +286,8 @@ fun PlayerScreen(
 
         val fallbackPainter = painterResource(id = R.drawable.ic_launcher_foreground)
         val hasCoverArt = !playbackState.trackCoverArtUri.isNullOrBlank()
-        val artModel = if (hasCoverArt) playbackState.trackCoverArtUri else station.favicon.ifEmpty { null }
+        val stationArtwork = stationArtworkSource(LocalContext.current, station)
+        val artModel = if (hasCoverArt) playbackState.trackCoverArtUri else stationArtwork
         val background = MaterialTheme.colorScheme.background
 
         // Blurred artwork, tinted towards the theme's background colour.
@@ -358,7 +360,7 @@ fun PlayerScreen(
                     )
                 }
 
-                if (hasCoverArt && station.favicon.isNotBlank()) {
+                if (hasCoverArt && stationArtwork != null) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
@@ -370,7 +372,7 @@ fun PlayerScreen(
                     ) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data(station.favicon)
+                                .data(stationArtwork)
                                 .crossfade(true)
                                 .build(),
                             contentDescription = stringResource(R.string.schedule_station_logo_cd),

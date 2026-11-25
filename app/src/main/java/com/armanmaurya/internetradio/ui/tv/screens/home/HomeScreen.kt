@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.res.painterResource
 import com.armanmaurya.internetradio.R
+import com.armanmaurya.internetradio.custom.artwork.stationArtworkSource
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -297,10 +298,14 @@ fun HomeScreen(
                                 ) {
                                     val fallbackPainter = painterResource(id = R.drawable.ic_launcher_foreground)
                                     val hasCoverArt = !playbackState.trackCoverArtUri.isNullOrBlank()
+                                    val miniplayerStationArt = stationArtworkSource(
+                                        androidx.compose.ui.platform.LocalContext.current,
+                                        playbackState.currentStation!!
+                                    )
                                     val miniplayerArt = if (hasCoverArt) {
                                         playbackState.trackCoverArtUri
                                     } else {
-                                        playbackState.currentStation!!.favicon.ifEmpty { null }
+                                        miniplayerStationArt
                                     }
                                     Box {
                                         AsyncImage(
@@ -336,7 +341,7 @@ fun HomeScreen(
                                             }
                                         }
 
-                                        if (hasCoverArt && playbackState.currentStation!!.favicon.isNotBlank()) {
+                                        if (hasCoverArt && miniplayerStationArt != null) {
                                             Box(
                                                 modifier = Modifier
                                                     .align(Alignment.BottomStart)
@@ -352,7 +357,7 @@ fun HomeScreen(
                                             ) {
                                                 AsyncImage(
                                                     model = coil3.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
-                                                        .data(playbackState.currentStation!!.favicon)
+                                                        .data(miniplayerStationArt)
                                                         .size(coil3.size.Size.ORIGINAL)
                                                         .crossfade(true)
                                                         .build(),

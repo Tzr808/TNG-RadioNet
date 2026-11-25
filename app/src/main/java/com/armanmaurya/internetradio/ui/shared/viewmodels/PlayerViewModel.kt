@@ -31,6 +31,7 @@ import com.armanmaurya.internetradio.domain.usecase.player.SetSleepTimerUseCase
 import com.armanmaurya.internetradio.domain.usecase.player.SetPlayerVolumeUseCase
 import com.armanmaurya.internetradio.domain.usecase.player.StopPlaybackUseCase
 import com.armanmaurya.internetradio.core.provider.SvgProxyProvider
+import com.armanmaurya.internetradio.custom.artwork.stationArtworkSource
 import com.armanmaurya.internetradio.service.playback.engine.RetryStateTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -563,10 +564,11 @@ class PlayerViewModel @Inject constructor(
             connectedCastDevice
         ) { station, device ->
             if (station != null && device != null) {
-                val proxyFavicon = if (station.favicon.endsWith(".svg", true)) {
-                    SvgProxyProvider.createProxyUri(context, station.favicon)
+                val artwork = stationArtworkSource(context, station).orEmpty()
+                val proxyFavicon = if (artwork.endsWith(".svg", true)) {
+                    SvgProxyProvider.createProxyUri(context, artwork)
                 } else {
-                    station.favicon
+                    artwork
                 }
                 castController.load(
                     url = station.urlResolved,

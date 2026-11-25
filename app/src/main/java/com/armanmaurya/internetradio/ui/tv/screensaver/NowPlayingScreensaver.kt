@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.armanmaurya.internetradio.R
+import com.armanmaurya.internetradio.custom.artwork.stationArtworkSource
 import com.armanmaurya.internetradio.domain.model.RadioStation
 import kotlinx.coroutines.delay
 import java.util.Date
@@ -119,7 +120,8 @@ fun NowPlayingScreensaver(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AsyncImage(
-                    model = coverArtUri?.ifBlank { null } ?: station?.favicon?.ifBlank { null },
+                    model = coverArtUri?.ifBlank { null }
+                        ?: station?.let { stationArtworkSource(LocalContext.current, it) },
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     error = painterResource(R.drawable.ic_launcher_foreground),

@@ -9,11 +9,18 @@ import com.armanmaurya.internetradio.data.local.entity.StationEntity
 import com.armanmaurya.internetradio.data.local.entity.toDomain
 import com.armanmaurya.internetradio.data.local.entity.toEntity
 import com.armanmaurya.internetradio.data.remote.RadioBrowserApi
+import com.armanmaurya.internetradio.data.worker.ArtworkEnrichmentScheduler
 import com.armanmaurya.internetradio.domain.model.RadioStation
 import com.armanmaurya.internetradio.domain.repository.LibraryRepository
+import com.armanmaurya.internetradio.domain.repository.SettingsRepository
+import com.armanmaurya.internetradio.domain.repository.StationArtworkRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.util.UUID
@@ -26,8 +33,13 @@ class LibraryRepositoryImpl @Inject constructor(
     private val recentStationDao: RecentStationDao,
     private val scheduleDao: ScheduleDao,
     private val radioBrowserApi: RadioBrowserApi,
-    private val okHttpClient: OkHttpClient
+    private val okHttpClient: OkHttpClient,
+    private val settingsRepository: SettingsRepository,
+    private val stationArtworkRepository: StationArtworkRepository,
+    private val artworkEnrichmentScheduler: ArtworkEnrichmentScheduler,
 ) : LibraryRepository {
+
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     override fun getAllStations(): Flow<List<RadioStation>> {
         return stationDao.getAllFavorites().map { entities ->
             entities.map { it.toDomain() }
@@ -101,6 +113,23 @@ class LibraryRepositoryImpl @Inject constructor(
                 lastPlayedAt = lastPlayedAt
             )
         )
+        enrichArtworkIfNeeded(station)
+    }
+
+    /**
+     * Fetch the missing station logo right after it is saved, so the player sheet and every other
+     * surface can show it without waiting for the periodic worker. Opt-in only.
+     */
+    private fun enrichArtworkIfNeeded(station: RadioStation) {
+        if (station.favicon.isNotBlank()) return
+        appScope.launch {
+            runCatching {
+                if (!settingsRepository.appPreferencesFlow.first().autoArtworkEnabled) return@launch
+                stationArtworkRepository.resolve(station)
+                // Also let the worker pick up anything else still pending.
+                artworkEnrichmentScheduler.scheduleIfEnabled()
+            }
+        }
     }
 
     private suspend fun resolveUrlIfNeeded(url: String): String {
@@ -142,6 +171,7 @@ class LibraryRepositoryImpl @Inject constructor(
             orderIndex = stationDao.nextOrderIndex()
         )
         stationDao.insertStation(station)
+        enrichArtworkIfNeeded(station.toDomain())
     }
     
     override suspend fun updateStation(
