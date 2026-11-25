@@ -109,25 +109,7 @@ fun StationVolumeButton(
                     .size(28.dp)
                     .graphicsLayer { scaleX = -1f }
             )
-            if (hasSavedVolume) {
-                Canvas(modifier = Modifier.size(28.dp)) {
-                    val arcRadius = size.width * 0.35f
-                    val centerX = size.width / 2f
-                    val centerY = size.height / 2f
-                    val startX = centerX - arcRadius
-                    val startY = centerY - arcRadius
-                    val path = Path().apply {
-                        moveTo(startX + arcRadius, startY + arcRadius * 0.5f)
-                        arcTo(
-                            rect = Rect(startX, startY, startX + arcRadius * 2f, startY + arcRadius * 2f),
-                            startAngleDegrees = -45f,
-                            sweepAngleDegrees = 90f,
-                            forceMoveTo = false
-                        )
-                    }
-                    drawPath(path = path, color = Color(0xFF4CAF50), style = Stroke(width = 2.5f))
-                }
-            }
+
         }
     }
 }
