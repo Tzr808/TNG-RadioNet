@@ -330,8 +330,9 @@ Verifica che questi punti esistano ancora dopo un pull (sono pochi e tutti picco
 | H-48 | `service/playback/MediaItemMapper.kt` | `toMediaItem`/`createStationMediaItem` usano `stationArtworkSource`/`cachedStationArtwork`; extra `stationFavicon` contiene l'URL risolto (notifica, lock screen, widget, Android Auto) |
 | H-49 | `data/repository/LibraryRepositoryImpl.kt` | dopo `addStationToLibrary`/`addCustomStation`, se `favicon` è vuoto esegue `StationArtworkRepository.resolve()` in background (solo se `autoArtworkEnabled`) e schedula il worker |
 | H-50 | `data/shortcut/ShortcutControllerImpl.kt`, `data/recording/RecordingArtworkStore.kt`, `ui/shared/viewmodels/PlayerViewModel.kt`, `ui/widget/WidgetConfigureViewModel.kt`, `ui/widget/NowPlayingWidgetReceiver.kt`, `ui/widget/NowPlayingWidgetConfigureActivity.kt` | icone/artwork da `stationArtworkSource`/`stationArtworkUrl` (shortcut, copertina registrazioni, cast, preview widget) |
-| H-51 | `ui/mobile/screens/languages/LanguageSelectScreen.kt` | l'elenco lingue (`LazyColumn` + `LanguageItem`) è sostituito da `custom.ui.AdaptiveChoicePanel` a schermo intero: griglia adattiva che riempie l'area visibile (zero scroll), opzione 0 = "Tutte le lingue". Gli helper `LanguageItem`/`Badge*` restano nel file ma non sono più chiamati |
-| H-52 | `ui/mobile/screens/settings/SettingsScreen.kt` | le scelte multiple usano `custom.ui.AdaptiveChoicePanel` al posto di `FlowRow`+`FilterChip` (Scheda predefinita) e di `OptionItem` (Livello buffer, Durata retry, Formato ora registrazioni, Inizio settimana). Import rimossi: `FilterChip`, `FilterChipDefaults`, `OptionItem`, `Check`. Le scelte colore (tema/palette) restano invariate |
+| H-51 | `ui/mobile/screens/languages/LanguageSelectScreen.kt` | l'elenco lingue (`LazyColumn` + `LanguageItem`) è sostituito da `custom.ui.AdaptiveChoicePanel` a schermo intero: griglia adattiva che riempie l'area visibile (zero scroll), opzione 0 = "Tutte le lingue". Rimosso l'helper `LanguageItem` (e gli import `LazyColumn`/`itemsIndexed`/`rememberLazyListState`, `clickable`, `background`, `Check`) |
+| H-52 | `ui/mobile/screens/settings/SettingsScreen.kt` | tutte le scelte multiple usano `custom.ui.AdaptiveChoicePanel` dentro `ExpandableItem`, come l'originale "Livello buffer": **Lingua** (voce 0 = Sistema + lingue dell'app, prima era un `Item` con freccia che apriva `AppLanguageScreen`), Scheda predefinita (prima `FlowRow`+`FilterChip`), Livello buffer, Durata retry, Formato ora registrazioni, Inizio settimana (prima `OptionItem`). Cambi di firma: `SettingsScreen` non ha più il parametro `onLanguageClick` (usa `viewModel::setAppLanguage`); `GeneralSection` riceve `onSetAppLanguage`. Import rimossi: `FilterChip`, `FilterChipDefaults`, `OptionItem`, `Check`, `KeyboardArrowRight`. Le scelte colore (tema/palette) restano invariate |
+| H-53 | `ui/mobile/navigation/AppNavHost.kt` | rimosso l'argomento `onLanguageClick = { navigate(AppDestination.AppLanguage.route) }` da `SettingsScreen(...)`: la rotta `AppLanguage` e `AppLanguageScreen` restano nel progetto ma non sono più raggiungibili dalla UI (la lingua si sceglie nella tendina delle Impostazioni) |
 
 ### 2.1 Copertine ovunque (fix disallineamento Player Sheet)
 
@@ -383,6 +384,8 @@ schermata Lingua e le tendine delle Impostazioni hanno lo stesso stile del vecch
   inline vince la compattezza, così non serve scroll). Le celle restano bilanciate (max 1,35×
   larghezza, 160 dp) e la griglia viene centrata nello spazio eccedente; l'ultima riga parziale
   mantiene celle della stessa larghezza.
+- Stessa tendina (ExpandableItem + pannello) per **Lingua** nelle Impostazioni, dove le opzioni
+  sono "Sistema" + le lingue dell'app; sceglierne una applica subito il locale (`setAppLanguage`).
 - **Logica tipografica**: il font scende a passi di 0,5 sp da 20 sp fino a 12 sp finché ogni
   etichetta entra (misurata con `TextMeasurer`) senza troncamenti e senza spezzare parole
   (nessuna parola più larga della cella); line-height = 1,15 × font.

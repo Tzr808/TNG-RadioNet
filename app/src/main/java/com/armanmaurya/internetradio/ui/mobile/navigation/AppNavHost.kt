@@ -82,7 +82,6 @@ fun AppNavHost(
             SettingsScreen(
                 onBackClick = { navController.popBackStack() },
                 onCheckUpdatesClick = onCheckUpdates,
-                onLanguageClick = { navController.navigate(AppDestination.AppLanguage.route) },
                 onLyricsProvidersClick = { navController.navigate(AppDestination.LyricsProviders.route) },
                 onImportClick = { navController.navigate(AppDestination.ImportStations.route) },
                 onExportClick = { navController.navigate(AppDestination.ExportStations.route) },

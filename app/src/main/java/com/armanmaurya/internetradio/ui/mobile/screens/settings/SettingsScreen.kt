@@ -47,7 +47,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.filled.BrightnessAuto
@@ -141,7 +140,6 @@ fun SettingsScreen(
     exportViewModel: ExportViewModel = hiltViewModel(),
     onBackClick: () -> Unit,
     onCheckUpdatesClick: () -> Unit = {},
-    onLanguageClick: () -> Unit = {},
     onLyricsProvidersClick: () -> Unit = {},
     onImportClick: () -> Unit = {},
     onExportClick: () -> Unit = {},
@@ -242,7 +240,7 @@ fun SettingsScreen(
                 languages = rememberAppLanguages(),
                 expandedItem = expandedItem,
                 onExpandedItemChange = { expandedItem = it },
-                onLanguageClick = onLanguageClick,
+                onSetAppLanguage = viewModel::setAppLanguage,
                 onSetDefaultTab = viewModel::setDefaultTab,
                 onSetAutoRouteToBrowseOnSearch = viewModel::setAutoRouteToBrowseOnSearch,
                 showRecentLimitDialog = showRecentLimitDialog,
@@ -623,7 +621,7 @@ private fun GeneralSection(
     languages: List<AppLanguage>,
     expandedItem: String?,
     onExpandedItemChange: (String?) -> Unit,
-    onLanguageClick: () -> Unit,
+    onSetAppLanguage: (String) -> Unit,
     onSetDefaultTab: (Int) -> Unit,
     onSetAutoRouteToBrowseOnSearch: (Boolean) -> Unit,
     showRecentLimitDialog: Boolean,
@@ -638,19 +636,37 @@ private fun GeneralSection(
         ?: stringResource(R.string.settings_system_default)
 
     Section(title = stringResource(R.string.settings_general_section)) {
-        Item(
+        // Stessa tendina adattiva delle altre scelte multiple (stile "Livello buffer").
+        val languageTags = remember(languages) {
+            listOf(SYSTEM_LANGUAGE_TAG) + languages.map { it.tag }
+        }
+        val systemDefaultLabel = stringResource(R.string.settings_system_default)
+        val languageLabels = remember(languages, systemDefaultLabel) {
+            listOf(systemDefaultLabel) + languages.map { it.nativeName }
+        }
+        val selectedLanguageIndex = languageTags
+            .indexOf(activeLanguageTag)
+            .coerceAtLeast(0)
+
+        ExpandableItem(
             title = stringResource(R.string.settings_language_title),
             subtitle = activeLanguageName,
-            onClick = onLanguageClick,
+            isExpanded = expandedItem == "AppLanguage",
+            onToggle = {
+                onExpandedItemChange(if (expandedItem == "AppLanguage") null else "AppLanguage")
+            },
             icon = Icons.Default.Translate,
-            shape = topShape,
-            trailingContent = {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null
-                )
-            }
-        )
+            shape = topShape
+        ) {
+            com.armanmaurya.internetradio.custom.ui.AdaptiveChoicePanel(
+                options = languageLabels,
+                selectedIndex = selectedLanguageIndex,
+                onSelect = { index -> onSetAppLanguage(languageTags[index]) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+            )
+        }
 
         androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(2.dp))
 
