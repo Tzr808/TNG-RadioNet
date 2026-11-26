@@ -59,7 +59,7 @@
     <string name="settings_check_updates">Controlla aggiornamenti</string>
     <string name="settings_rate_review">Valuta e recensisci</string>
     <string name="settings_track_history_limit">Limite cronologia tracce</string>
-    <string name="settings_system_default">Predefinito di sistema</string>
+    <string name="settings_system_default">Default</string>
     <string name="settings_start_week_title">Inizia la settimana di</string>
     <string name="settings_start_week_sunday">Domenica</string>
     <string name="settings_start_week_monday">Lunedì</string>
