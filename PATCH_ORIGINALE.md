@@ -330,6 +330,8 @@ Verifica che questi punti esistano ancora dopo un pull (sono pochi e tutti picco
 | H-48 | `service/playback/MediaItemMapper.kt` | `toMediaItem`/`createStationMediaItem` usano `stationArtworkSource`/`cachedStationArtwork`; extra `stationFavicon` contiene l'URL risolto (notifica, lock screen, widget, Android Auto) |
 | H-49 | `data/repository/LibraryRepositoryImpl.kt` | dopo `addStationToLibrary`/`addCustomStation`, se `favicon` è vuoto esegue `StationArtworkRepository.resolve()` in background (solo se `autoArtworkEnabled`) e schedula il worker |
 | H-50 | `data/shortcut/ShortcutControllerImpl.kt`, `data/recording/RecordingArtworkStore.kt`, `ui/shared/viewmodels/PlayerViewModel.kt`, `ui/widget/WidgetConfigureViewModel.kt`, `ui/widget/NowPlayingWidgetReceiver.kt`, `ui/widget/NowPlayingWidgetConfigureActivity.kt` | icone/artwork da `stationArtworkSource`/`stationArtworkUrl` (shortcut, copertina registrazioni, cast, preview widget) |
+| H-51 | `ui/mobile/screens/languages/LanguageSelectScreen.kt` | l'elenco lingue (`LazyColumn` + `LanguageItem`) è sostituito da `custom.ui.AdaptiveChoicePanel` a schermo intero: griglia adattiva che riempie l'area visibile (zero scroll), opzione 0 = "Tutte le lingue". Gli helper `LanguageItem`/`Badge*` restano nel file ma non sono più chiamati |
+| H-52 | `ui/mobile/screens/settings/SettingsScreen.kt` | le scelte multiple usano `custom.ui.AdaptiveChoicePanel` al posto di `FlowRow`+`FilterChip` (Scheda predefinita) e di `OptionItem` (Livello buffer, Durata retry, Formato ora registrazioni, Inizio settimana). Import rimossi: `FilterChip`, `FilterChipDefaults`, `OptionItem`, `Check`. Le scelte colore (tema/palette) restano invariate |
 
 ### 2.1 Copertine ovunque (fix disallineamento Player Sheet)
 
@@ -370,11 +372,31 @@ Esempio: con `baseVersion=1.1.1` e `buildBase=808`, subito dopo il commit che to
 versione è `1.1.1.808`; dopo 3 commit diventa `1.1.1.811`.
 Se `git` non è disponibile (build da tarball/senza repository) il contatore resta `buildBase`.
 
+### 2.3 Pannello di scelta adattivo (`custom/ui/AdaptiveChoicePanel.kt`)
+
+Tutte le scelte multiple tranne i colori (palette/tema) usano lo stesso pannello, così la
+schermata Lingua e le tendine delle Impostazioni hanno lo stesso stile del vecchio "Livello buffer".
+
+- **Logica spaziale**: per ogni numero di colonne possibile (1…n, in pixel dall'area reale) calcola
+  larghezza/altezza di cella, padding e gap; sceglie la griglia con il punteggio migliore
+  (leggibilità + celle piene; su pannello a schermo intero vince il font più grande, su contenuto
+  inline vince la compattezza, così non serve scroll). Le celle restano bilanciate (max 1,35×
+  larghezza, 160 dp) e la griglia viene centrata nello spazio eccedente; l'ultima riga parziale
+  mantiene celle della stessa larghezza.
+- **Logica tipografica**: il font scende a passi di 0,5 sp da 20 sp fino a 12 sp finché ogni
+  etichetta entra (misurata con `TextMeasurer`) senza troncamenti e senza spezzare parole
+  (nessuna parola più larga della cella); line-height = 1,15 × font.
+
+Quando il pannello è a schermo intero (Lingua) riempie esattamente l'area visibile con zero
+scroll; dentro un `ExpandableItem` (altezza libera) usa l'altezza minima che evita lo scroll.
+
 ---
 
 ## 3. File nuovi (non richiedono patch, vivono fuori dal codice dell'autore)
 
 - `custom/about/TngAboutSection.kt` — sezione About del flavor TNG.
+- `custom/ui/AdaptiveChoicePanel.kt` — pannello di scelta multipla adattivo (stile "Livello
+  buffer") usato da Lingua e dalle tendine delle Impostazioni, vedi sezione 2.3.
 - `domain/model/BufferLevel.kt` — livelli di buffer ExoPlayer.
 - `service/playback/StationVolumeManager.kt` — **unica fonte** dei volumi per stazione+dispositivo.
 - `ui/mobile/screens/player/components/stationvolume/StationVolumeButton.kt` (+ `StationVolumeDialog`)

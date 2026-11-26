@@ -49,13 +49,10 @@ import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material3.FilterChip
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ButtonDefaults
@@ -126,7 +123,6 @@ import com.armanmaurya.internetradio.ui.shared.viewmodels.message
 import com.armanmaurya.internetradio.ui.shared.viewmodels.SettingsViewModel
 import com.armanmaurya.internetradio.ui.mobile.screens.settings.components.ExpandableItem
 import com.armanmaurya.internetradio.ui.mobile.screens.settings.components.Item
-import com.armanmaurya.internetradio.ui.mobile.screens.settings.components.OptionItem
 import androidx.compose.foundation.isSystemInDarkTheme
 import com.armanmaurya.internetradio.ui.mobile.screens.settings.components.PalettePickerItem
 import com.armanmaurya.internetradio.ui.mobile.screens.settings.components.CustomColorPickerBottomSheet
@@ -674,44 +670,16 @@ private fun GeneralSection(
             icon = Icons.Default.StarRate,
             shape = middleShape
         ) {
-            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-            androidx.compose.foundation.layout.FlowRow(
+            // Stesso stile del pannello "Livello buffer": griglia adattiva che entra
+            // nell'area disponibile senza scroll né parole spezzate.
+            com.armanmaurya.internetradio.custom.ui.AdaptiveChoicePanel(
+                options = tabs,
+                selectedIndex = uiState.defaultTab.coerceIn(0, tabs.lastIndex),
+                onSelect = onSetDefaultTab,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                tabs.forEachIndexed { index, name ->
-                    val isSelected = uiState.defaultTab == index
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { onSetDefaultTab(index) },
-                        modifier = Modifier.weight(1f),
-                        label = {
-                            Text(
-                                text = name,
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                        },
-                        leadingIcon = {
-                            androidx.compose.animation.AnimatedVisibility(
-                                visible = isSelected,
-                                enter = androidx.compose.animation.fadeIn() +
-                                    androidx.compose.animation.expandHorizontally(),
-                                exit = androidx.compose.animation.fadeOut() +
-                                    androidx.compose.animation.shrinkHorizontally()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(FilterChipDefaults.IconSize)
-                                )
-                            }
-                        }
-                    )
-                }
-            }
+                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+            )
         }
 
         androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(2.dp))
@@ -908,13 +876,15 @@ private fun PlayerSection(
             icon = Icons.Default.Update,
             shape = middleShape
         ) {
-            retryOptions.forEach { (duration, label) ->
-                OptionItem(
-                    label = label,
-                    isSelected = uiState.maxRetryDuration == duration,
-                    onClick = { onSetMaxRetryDuration(duration) }
-                )
-            }
+            com.armanmaurya.internetradio.custom.ui.AdaptiveChoicePanel(
+                options = retryOptions.map { it.second },
+                selectedIndex = retryOptions.indexOfFirst { it.first == uiState.maxRetryDuration }
+                    .coerceAtLeast(0),
+                onSelect = { index -> onSetMaxRetryDuration(retryOptions[index].first) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+            )
         }
 
         androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(2.dp))
@@ -954,13 +924,15 @@ private fun PlayerSection(
             icon = Icons.Default.Headphones,
             shape = middleShape
         ) {
-            bufferOptions.forEach { (level, label) ->
-                OptionItem(
-                    label = label,
-                    isSelected = uiState.bufferLevel == level,
-                    onClick = { onSetBufferLevel(level) }
-                )
-            }
+            com.armanmaurya.internetradio.custom.ui.AdaptiveChoicePanel(
+                options = bufferOptions.map { it.second },
+                selectedIndex = bufferOptions.indexOfFirst { it.first == uiState.bufferLevel }
+                    .coerceAtLeast(0),
+                onSelect = { index -> onSetBufferLevel(bufferOptions[index].first) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+            )
         }
 
         if (showHistoryLimitDialog) {
@@ -1510,13 +1482,16 @@ private fun RecordingSection(
             icon = Icons.Default.AccessTime,
             shape = singleShape
         ) {
-            RecordingTimeFormat.entries.forEach { format ->
-                OptionItem(
-                    label = format.toDisplayString(),
-                    isSelected = uiState.recordingTimeFormat == format,
-                    onClick = { onSetRecordingTimeFormat(format) }
-                )
-            }
+            val formats = RecordingTimeFormat.entries
+            val formatLabels = formats.map { it.toDisplayString() }
+            com.armanmaurya.internetradio.custom.ui.AdaptiveChoicePanel(
+                options = formatLabels,
+                selectedIndex = formats.indexOf(uiState.recordingTimeFormat).coerceAtLeast(0),
+                onSelect = { index -> onSetRecordingTimeFormat(formats[index]) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+            )
         }
     }
 }
@@ -1541,13 +1516,16 @@ private fun ScheduleSection(
             icon = Icons.Default.CalendarMonth,
             shape = topShape
         ) {
-            StartOfWeek.entries.forEach { startOfWeek ->
-                OptionItem(
-                    label = startOfWeek.toDisplayString(),
-                    isSelected = uiState.startOfWeek == startOfWeek,
-                    onClick = { onSetStartOfWeek(startOfWeek) }
-                )
-            }
+            val weekDays = StartOfWeek.entries
+            val weekLabels = weekDays.map { it.toDisplayString() }
+            com.armanmaurya.internetradio.custom.ui.AdaptiveChoicePanel(
+                options = weekLabels,
+                selectedIndex = weekDays.indexOf(uiState.startOfWeek).coerceAtLeast(0),
+                onSelect = { index -> onSetStartOfWeek(weekDays[index]) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+            )
         }
 
         androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(2.dp))

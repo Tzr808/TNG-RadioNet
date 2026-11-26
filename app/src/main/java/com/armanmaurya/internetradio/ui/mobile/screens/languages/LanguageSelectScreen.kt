@@ -3,16 +3,10 @@ package com.armanmaurya.internetradio.ui.mobile.screens.languages
 
 
 import androidx.compose.animation.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -21,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,7 +52,6 @@ fun LanguageSelectScreen(
         }
     }
 
-    val context = LocalContext.current
     val allLanguagesName = stringResource(R.string.select_language_all)
 
     Scaffold(
@@ -137,70 +129,45 @@ fun LanguageSelectScreen(
                     Text(text = uiState.error ?: stringResource(R.string.error_unknown))
                 }
             } else {
-                val listState = rememberLazyListState(
-                    initialFirstVisibleItemIndex = remember {
+                // Pannello adattivo (stile "Livello buffer"): l'intera area visibile viene
+                // riempita dalla griglia di lingue, senza scroll e senza troncamenti.
+                val languageOptions = remember(filteredLanguages, allLanguagesName) {
+                    buildList {
+                        add(allLanguagesName)
+                        filteredLanguages.forEach { add(it.name) }
+                    }
+                }
+                val selectedIndex = remember(languageOptions, filteredLanguages, selectedLanguage) {
+                    if (selectedLanguage.isNullOrBlank()) {
+                        0
+                    } else {
                         val index = filteredLanguages.indexOfFirst { it.isoCode == selectedLanguage }
                         if (index >= 0) index + 1 else 0
                     }
-                )
-
-                LazyColumn(
-                    state = listState,
-                    contentPadding = PaddingValues(
-                        bottom = contentPadding.calculateBottomPadding()
-                    )
-                ) {
-                    item(key = "all_languages") {
-                        LanguageItem(
-                            language = Language(name = allLanguagesName, isoCode = "", stationCount = 0),
-                            isSelected = selectedLanguage.isNullOrBlank(),
-                            onClick = { onLanguageSelected(Language(name = allLanguagesName, isoCode = "", stationCount = 0)) },
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                    }
-                    itemsIndexed(filteredLanguages, key = { _, language -> language.name }) { _, language ->
-                        val isSelected = language.isoCode == selectedLanguage
-                        LanguageItem(
-                            language = language,
-                            isSelected = isSelected,
-                            onClick = { onLanguageSelected(language) },
-                            modifier = Modifier.animateItem()
-                        )
-                    }
                 }
+
+                com.armanmaurya.internetradio.custom.ui.AdaptiveChoicePanel(
+                    options = languageOptions,
+                    selectedIndex = selectedIndex.coerceIn(0, languageOptions.lastIndex),
+                    onSelect = { index ->
+                        if (index == 0) {
+                            onLanguageSelected(
+                                Language(name = allLanguagesName, isoCode = "", stationCount = 0)
+                            )
+                        } else {
+                            onLanguageSelected(filteredLanguages[index - 1])
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(
+                            start = 16.dp,
+                            end = 16.dp,
+                            top = 8.dp,
+                            bottom = contentPadding.calculateBottomPadding() + 16.dp
+                        )
+                )
             }
         }
     }
-}
-
-@Composable
-private fun LanguageItem(
-    language: Language,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    ListItem(
-        headlineContent = { 
-            Text(
-                text = language.name,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                style = if (isSelected) MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.primary) else MaterialTheme.typography.bodyLarge
-            ) 
-        },
-        trailingContent = { 
-            if (isSelected) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            } else if (!language.isoCode.isNullOrBlank()) {
-                Text(language.isoCode.uppercase())
-            }
-        },
-        modifier = modifier
-            .clickable(onClick = onClick)
-            .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) else Color.Transparent)
-    )
 }
