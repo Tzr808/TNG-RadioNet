@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="app/src/main/ic_launcher-playstore.png" width="128" height="128" style="border-radius: 50%;" />
+<img src="app/src/main/ic_launcher-playstore.png" width="128" height="128" style="border-radius: 12%;" />
 
 # InternetRadio
 
