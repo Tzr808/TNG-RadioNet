@@ -59,5 +59,7 @@ data class AppPreferences(
     /** Livello di buffer per l'ExoPlayer (STANDARD o HIGH). */
     val bufferLevel: BufferLevel = BufferLevel.STANDARD,
     /** Quando attivo in modalità scura, applica uno sfondo nero puro a tutto il tema. */
-    val isPureBlackEnabled: Boolean = false
+    val isPureBlackEnabled: Boolean = false,
+    /** Flag esplicito per tracciare se la modalità monocromatica è attiva. */
+    val isMonochromeEnabled: Boolean = false
 )
