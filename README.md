@@ -78,9 +78,7 @@ This is a personal fork of Internet Radio, customized and maintained for persona
 
 ## Translation
 
-Translations are managed on <a href="https://hosted.weblate.org/projects/internetradio/">Weblate</a> — no local setup needed, contribute directly from your browser.
 
-<a href="https://hosted.weblate.org/engage/internetradio/"><img src="https://hosted.weblate.org/widget/internetradio/multi-auto.svg"></a>
 
 ## Acknowledgments
 
