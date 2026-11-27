@@ -79,7 +79,8 @@ fun PalettePickerItem(
                 )
             )
         }
-        AppColor.entries.forEach { color ->
+        // PURE_BLACK non va mostrato qui: è gestito come toggle separato, non come palette.
+        AppColor.entries.filter { it != AppColor.PURE_BLACK }.forEach { color ->
             val isSelected = !isDynamicActive && selectedColor == color
             add(
                 PaletteSwatch(
