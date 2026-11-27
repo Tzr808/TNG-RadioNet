@@ -121,10 +121,11 @@ Translations are managed on <a href="https://hosted.weblate.org/projects/interne
 
 - [Maintendo](https://github.com/Maintendo) - app logo.
 
-### Crediti
-
-Icona "pocket-radio" creata da GameIcons (tratta da Game Icons su Iconify: https://icon-sets.iconify.design/game-icons/pocket-radio/), distribuita con licenza CC BY 3.0 (https://creativecommons.org). Modificata rispetto all'originale.
-
 ## License
 
 This project is licensed under the GNU GPL v3 License - see the [LICENSE](LICENSE) file for details.
+
+### Third-Party Credits
+
+"[pocket-radio](https://iconify.design)" icon created by **GameIcons** (from Game Icons on Iconify), licensed under **[CC BY 3.0](https://creativecommons.org)**. Modified from the original.
+
