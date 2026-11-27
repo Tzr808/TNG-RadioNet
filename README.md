@@ -4,7 +4,7 @@
 
 # TNG RadioNet
 
-This is a personal fork of [Original App Name], customized and maintained for personal use.
+This is a personal fork of Internet Radio, customized and maintained for personal use.
 
 
 </div>
