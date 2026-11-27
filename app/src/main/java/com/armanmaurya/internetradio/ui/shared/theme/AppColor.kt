@@ -10,12 +10,167 @@ import com.armanmaurya.internetradio.R
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamicColorScheme
 
+/**
+ * Monochrome scheme: greyscale palette with dark grey containers in dark mode,
+ * light grey containers in light mode. Accent-free.
+ */
+private val monochromeDarkScheme: ColorScheme = darkColorScheme(
+    primary = Color.White,
+    onPrimary = Color.Black,
+    primaryContainer = Color(0xFF333333),
+    onPrimaryContainer = Color.White,
+    inversePrimary = Color.Black,
+    secondary = Color(0xFFBDBDBD),
+    onSecondary = Color.Black,
+    secondaryContainer = Color(0xFF333333),
+    onSecondaryContainer = Color.White,
+    tertiary = Color(0xFF9E9E9E),
+    onTertiary = Color.Black,
+    tertiaryContainer = Color(0xFF333333),
+    onTertiaryContainer = Color.White,
+    background = Color.Black,
+    onBackground = Color(0xFFE7E9EA),
+    surface = Color.Black,
+    onSurface = Color(0xFFE7E9EA),
+    surfaceVariant = Color(0xFF262626),
+    onSurfaceVariant = Color(0xFF8B8F93),
+    surfaceTint = Color.Black,
+    inverseSurface = Color.White,
+    inverseOnSurface = Color.Black,
+    outline = Color(0xFF5C5C5C),
+    outlineVariant = Color(0xFF2F3336),
+    surfaceBright = Color(0xFF2A2A2A),
+    surfaceDim = Color.Black,
+    surfaceContainerLowest = Color.Black,
+    surfaceContainerLow = Color.Black,
+    surfaceContainer = Color(0xFF121212),
+    surfaceContainerHigh = Color(0xFF1A1A1A),
+    surfaceContainerHighest = Color(0xFF242424)
+)
+
+/**
+ * Monochrome light scheme: greyscale palette with light grey containers.
+ */
+private val monochromeLightScheme: ColorScheme = lightColorScheme(
+    primary = Color.Black,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFE6E6E6),
+    onPrimaryContainer = Color.Black,
+    inversePrimary = Color.White,
+    secondary = Color(0xFF424242),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFE0E0E0),
+    onSecondaryContainer = Color.Black,
+    tertiary = Color(0xFF616161),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFE6E6E6),
+    onTertiaryContainer = Color.Black,
+    background = Color.White,
+    onBackground = Color(0xFF0F1419),
+    surface = Color.White,
+    onSurface = Color(0xFF0F1419),
+    surfaceVariant = Color(0xFFEFF1F2),
+    onSurfaceVariant = Color(0xFF536471),
+    surfaceTint = Color.White,
+    inverseSurface = Color.Black,
+    inverseOnSurface = Color.White,
+    outline = Color(0xFF9E9E9E),
+    outlineVariant = Color(0xFFE1E1E1),
+    surfaceBright = Color.White,
+    surfaceDim = Color(0xFFE6E6E6),
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFF7F7F7),
+    surfaceContainer = Color(0xFFF2F2F2),
+    surfaceContainerHigh = Color(0xFFEFEFEF),
+    surfaceContainerHighest = Color(0xFFE8E8E8)
+)
+
+/**
+ * Pure Black dark scheme: strictly #000000 and #FFFFFF only.
+ * No greys, no tints. Maximum contrast for OLED screens.
+ */
+private val pureBlackDarkScheme: ColorScheme = darkColorScheme(
+    primary = Color.White,
+    onPrimary = Color.Black,
+    primaryContainer = Color(0xFF000000),
+    onPrimaryContainer = Color.White,
+    inversePrimary = Color.Black,
+    secondary = Color.White,
+    onSecondary = Color.Black,
+    secondaryContainer = Color(0xFF000000),
+    onSecondaryContainer = Color.White,
+    tertiary = Color.White,
+    onTertiary = Color.Black,
+    tertiaryContainer = Color(0xFF000000),
+    onTertiaryContainer = Color.White,
+    background = Color.Black,
+    onBackground = Color.White,
+    surface = Color.Black,
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF000000),
+    onSurfaceVariant = Color.White,
+    surfaceTint = Color.Black,
+    inverseSurface = Color.White,
+    inverseOnSurface = Color.Black,
+    outline = Color.White,
+    outlineVariant = Color(0xFF000000),
+    surfaceBright = Color.Black,
+    surfaceDim = Color.Black,
+    surfaceContainerLowest = Color.Black,
+    surfaceContainerLow = Color.Black,
+    surfaceContainer = Color.Black,
+    surfaceContainerHigh = Color.Black,
+    surfaceContainerHighest = Color.Black
+)
+
+/**
+ * Pure Black light scheme: white background, black text/icons,
+ * very light grey containers to keep cards visible.
+ */
+private val pureBlackLightScheme: ColorScheme = lightColorScheme(
+    primary = Color.Black,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFF5F5F5),
+    onPrimaryContainer = Color.Black,
+    inversePrimary = Color.Black,
+    secondary = Color.Black,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFF5F5F5),
+    onSecondaryContainer = Color.Black,
+    tertiary = Color.Black,
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFF5F5F5),
+    onTertiaryContainer = Color.Black,
+    background = Color.White,
+    onBackground = Color.Black,
+    surface = Color.White,
+    onSurface = Color.Black,
+    surfaceVariant = Color(0xFFF5F5F5),
+    onSurfaceVariant = Color.Black,
+    surfaceTint = Color.White,
+    inverseSurface = Color.Black,
+    inverseOnSurface = Color.White,
+    outline = Color.Black,
+    outlineVariant = Color(0xFFE0E0E0),
+    surfaceBright = Color.White,
+    surfaceDim = Color(0xFFF5F5F5),
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFF5F5F5),
+    surfaceContainer = Color(0xFFF5F5F5),
+    surfaceContainerHigh = Color(0xFFEEEEEE),
+    surfaceContainerHighest = Color(0xFFE0E0E0)
+)
+
 enum class AppColor(
     @StringRes val titleRes: Int,
     val previewColor: Color
 ) {
     MONOCHROME(
         titleRes = R.string.settings_color_monochrome,
+        previewColor = Color.Black
+    ),
+    PURE_BLACK(
+        titleRes = R.string.settings_pure_black_title,
         previewColor = Color.Black
     ),
     PURPLE(
@@ -52,10 +207,10 @@ enum class AppColor(
     );
 
     private val defaultLightScheme: ColorScheme by lazy {
-        if (this == MONOCHROME) {
-            monochromeLightScheme
-        } else {
-            dynamicColorScheme(
+        when (this) {
+            MONOCHROME -> monochromeLightScheme
+            PURE_BLACK -> pureBlackLightScheme
+            else -> dynamicColorScheme(
                 seedColor = previewColor,
                 isDark = false,
                 style = PaletteStyle.Vibrant
@@ -64,10 +219,10 @@ enum class AppColor(
     }
 
     private val defaultDarkScheme: ColorScheme by lazy {
-        if (this == MONOCHROME) {
-            monochromeDarkScheme
-        } else {
-            dynamicColorScheme(
+        when (this) {
+            MONOCHROME -> monochromeDarkScheme
+            PURE_BLACK -> pureBlackDarkScheme
+            else -> dynamicColorScheme(
                 seedColor = previewColor,
                 isDark = true,
                 style = PaletteStyle.Vibrant
@@ -109,80 +264,6 @@ internal fun isGreyscale(color: Color): Boolean {
     val min = minOf(color.red, color.green, color.blue)
     return max - min <= GREYSCALE_CHANNEL_TOLERANCE
 }
-
-/**
- * Black-and-white scheme: pure black background with white components in dark mode,
- * pure white background with black components in light mode. No accent hue.
- * Dark mode keeps page backgrounds pure black and lifts cards/list items to dark greys
- * so they stay visible.
- */
-private val monochromeDarkScheme: ColorScheme = darkColorScheme(
-    primary = Color.White,
-    onPrimary = Color.Black,
-    primaryContainer = Color(0xFF333333),
-    onPrimaryContainer = Color.White,
-    inversePrimary = Color.Black,
-    secondary = Color(0xFFBDBDBD),
-    onSecondary = Color.Black,
-    secondaryContainer = Color(0xFF333333),
-    onSecondaryContainer = Color.White,
-    tertiary = Color(0xFF9E9E9E),
-    onTertiary = Color.Black,
-    tertiaryContainer = Color(0xFF333333),
-    onTertiaryContainer = Color.White,
-    background = Color.Black,
-    onBackground = Color(0xFFE7E9EA),
-    surface = Color.Black,
-    onSurface = Color(0xFFE7E9EA),
-    surfaceVariant = Color(0xFF262626),
-    onSurfaceVariant = Color(0xFF8B8F93),
-    surfaceTint = Color.Black,
-    inverseSurface = Color.White,
-    inverseOnSurface = Color.Black,
-    outline = Color(0xFF5C5C5C),
-    outlineVariant = Color(0xFF2F3336),
-    surfaceBright = Color(0xFF2A2A2A),
-    surfaceDim = Color.Black,
-    surfaceContainerLowest = Color.Black,
-    surfaceContainerLow = Color.Black,
-    surfaceContainer = Color(0xFF121212),
-    surfaceContainerHigh = Color(0xFF1A1A1A),
-    surfaceContainerHighest = Color(0xFF242424)
-)
-
-private val monochromeLightScheme: ColorScheme = lightColorScheme(
-    primary = Color.Black,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFE6E6E6),
-    onPrimaryContainer = Color.Black,
-    inversePrimary = Color.White,
-    secondary = Color(0xFF424242),
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFE0E0E0),
-    onSecondaryContainer = Color.Black,
-    tertiary = Color(0xFF616161),
-    onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFE6E6E6),
-    onTertiaryContainer = Color.Black,
-    background = Color.White,
-    onBackground = Color(0xFF0F1419),
-    surface = Color.White,
-    onSurface = Color(0xFF0F1419),
-    surfaceVariant = Color(0xFFEFF1F2),
-    onSurfaceVariant = Color(0xFF536471),
-    surfaceTint = Color.White,
-    inverseSurface = Color.Black,
-    inverseOnSurface = Color.White,
-    outline = Color(0xFF9E9E9E),
-    outlineVariant = Color(0xFFE1E1E1),
-    surfaceBright = Color.White,
-    surfaceDim = Color(0xFFE6E6E6),
-    surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFF7F7F7),
-    surfaceContainer = Color(0xFFF2F2F2),
-    surfaceContainerHigh = Color(0xFFEFEFEF),
-    surfaceContainerHighest = Color(0xFFE8E8E8)
-)
 
 // Custom colours are hue-only: saturation and brightness are fixed so every custom seed
 // produces a clearly coloured palette (black/white/grey are covered by MONOCHROME).
