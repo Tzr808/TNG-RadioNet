@@ -82,14 +82,8 @@ To build InternetRadio from source, ensure you have the latest version of Androi
 
 ## Troubleshooting
 
-If FCast is not discovering or connecting to your device on desktop Linux, your firewall may be blocking the required ports. This is a known issue with **UFW** and similar firewall tools. To allow FCast connections, run:
 
-```bash
-sudo ufw allow 46899/tcp
-sudo ufw allow 46899/udp
-```
 
----
 
 ## Contributing
 
