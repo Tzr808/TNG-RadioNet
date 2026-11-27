@@ -2,9 +2,10 @@
 
 <img src="app/src/main/ic_launcher-playstore.png" width="128" height="128" style="border-radius: 12%;" />
 
-# InternetRadio
+# TNG RadioNet
 
-InternetRadio is an Android app for discovering and listening to radio stations from around the world, with features like favorites, recent history, and advanced search by country,language and tags.
+This is a personal fork of [Original App Name], customized and maintained for personal use.
+
 
 </div>
 
