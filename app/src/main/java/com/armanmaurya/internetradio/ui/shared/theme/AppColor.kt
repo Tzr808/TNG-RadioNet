@@ -14,7 +14,7 @@ import com.materialkolor.dynamicColorScheme
  * Monochrome scheme: greyscale palette with dark grey containers in dark mode,
  * light grey containers in light mode. Accent-free.
  */
-private val monochromeDarkScheme: ColorScheme = darkColorScheme(
+internal val monochromeDarkScheme: ColorScheme = darkColorScheme(
     primary = Color.White,
     onPrimary = Color.Black,
     primaryContainer = Color(0xFF333333),
@@ -51,7 +51,7 @@ private val monochromeDarkScheme: ColorScheme = darkColorScheme(
 /**
  * Monochrome light scheme: greyscale palette with light grey containers.
  */
-private val monochromeLightScheme: ColorScheme = lightColorScheme(
+internal val monochromeLightScheme: ColorScheme = lightColorScheme(
     primary = Color.Black,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFE6E6E6),
@@ -89,7 +89,7 @@ private val monochromeLightScheme: ColorScheme = lightColorScheme(
  * Pure Black dark scheme: strictly #000000 and #FFFFFF only.
  * No greys, no tints. Maximum contrast for OLED screens.
  */
-private val pureBlackDarkScheme: ColorScheme = darkColorScheme(
+internal val pureBlackDarkScheme: ColorScheme = darkColorScheme(
     primary = Color.White,
     onPrimary = Color.Black,
     primaryContainer = Color(0xFF000000),
@@ -127,7 +127,7 @@ private val pureBlackDarkScheme: ColorScheme = darkColorScheme(
  * Pure Black light scheme: white background, black text/icons,
  * very light grey containers to keep cards visible.
  */
-private val pureBlackLightScheme: ColorScheme = lightColorScheme(
+internal val pureBlackLightScheme: ColorScheme = lightColorScheme(
     primary = Color.Black,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFF5F5F5),
