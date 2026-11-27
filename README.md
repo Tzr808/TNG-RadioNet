@@ -14,11 +14,6 @@ This is a personal fork of Internet Radio, customized and maintained for persona
 
 ## Community
 
-Join the community for discussions, feedback, announcements, and sharing stations:
-
-[![Telegram](https://img.shields.io/badge/Telegram-Join%20Community-2CA5E0?logo=telegram&logoColor=white)](https://t.me/internetradiocommunity)
-[![Reddit](https://img.shields.io/badge/Reddit-r%2FInternetRadioFolks-FF4500?logo=reddit&logoColor=white)](https://www.reddit.com/r/InternetRadioFolks/)
-
 ---
 
 ## Features
