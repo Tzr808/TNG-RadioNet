@@ -64,15 +64,7 @@ This is a personal fork of Internet Radio, customized and maintained for persona
 
 ## Building From Source
 
-To build InternetRadio from source, ensure you have the latest version of Android Studio installed.
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/armanmaurya/internetradio.git
-   ```
-2. **Open the project** in Android Studio.
-3. **Wait for Gradle sync** to complete.
-4. **Run the app** on a physical device or emulator.
 
 ## Troubleshooting
 
@@ -81,15 +73,8 @@ To build InternetRadio from source, ensure you have the latest version of Androi
 
 ## Contributing
 
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
 
-Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
-## Contributors
-
-<a href="https://github.com/armanmaurya/InternetRadio/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=armanmaurya/InternetRadio" alt="InternetRadio Contributors"/>
-</a>
 
 ## Translation
 
