@@ -2,28 +2,20 @@
 
 <img src="app/src/main/ic_launcher-playstore.png" width="128" height="128" style="border-radius: 12%;" />
 
-# InternetRadio
+# TNG RadioNet
 
-InternetRadio is an Android app for discovering and listening to radio stations from around the world, with features like favorites, recent history, and advanced search by country,language and tags.
+This is a personal fork of Internet Radio, customized and maintained for personal use.
+
 
 </div>
 
 ## Download
 
-[<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="80">](https://play.google.com/store/apps/details?id=com.armanmaurya.internetradio)
-[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/en/packages/com.armanmaurya.internetradio/)
-[<img src="https://github.com/machiav3lli/oandbackupx/blob/034b226cea5c1b30eb4f6a6f313e4dadcbb0ece4/badge_github.png" alt="Get it on GitHub" height="80">](https://github.com/armanmaurya/internetradio/releases/latest/)
-
----
 
 ## Community
 
-Join the community for discussions, feedback, announcements, and sharing stations:
 
-[![Telegram](https://img.shields.io/badge/Telegram-Join%20Community-2CA5E0?logo=telegram&logoColor=white)](https://t.me/internetradiocommunity)
-[![Reddit](https://img.shields.io/badge/Reddit-r%2FInternetRadioFolks-FF4500?logo=reddit&logoColor=white)](https://www.reddit.com/r/InternetRadioFolks/)
 
----
 
 ## Features
 
@@ -61,12 +53,6 @@ Join the community for discussions, feedback, announcements, and sharing station
 
 ### Android TV
 
-<div align="center">
-  <img width="48%" src="fastlane/metadata/android/en-US/images/tvScreenshots/1.png" alt="TV Browse Screen">
-  <img width="48%" src="fastlane/metadata/android/en-US/images/tvScreenshots/2.png" alt="TV Player Screen">
-  <img width="48%" src="fastlane/metadata/android/en-US/images/tvScreenshots/3.png" alt="Select Country">
-  <img width="48%" src="fastlane/metadata/android/en-US/images/tvScreenshots/4.png" alt="Select Language">
-</div>
 
 ## Tech Stack
 
@@ -78,44 +64,21 @@ Join the community for discussions, feedback, announcements, and sharing station
 
 ## Building From Source
 
-To build InternetRadio from source, ensure you have the latest version of Android Studio installed.
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/armanmaurya/internetradio.git
-   ```
-2. **Open the project** in Android Studio.
-3. **Wait for Gradle sync** to complete.
-4. **Run the app** on a physical device or emulator.
 
 ## Troubleshooting
 
-If FCast is not discovering or connecting to your device on desktop Linux, your firewall may be blocking the required ports. This is a known issue with **UFW** and similar firewall tools. To allow FCast connections, run:
 
-```bash
-sudo ufw allow 46899/tcp
-sudo ufw allow 46899/udp
-```
 
----
 
 ## Contributing
 
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
 
-Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
-## Contributors
-
-<a href="https://github.com/armanmaurya/InternetRadio/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=armanmaurya/InternetRadio" alt="InternetRadio Contributors"/>
-</a>
 
 ## Translation
 
-Translations are managed on <a href="https://hosted.weblate.org/projects/internetradio/">Weblate</a> — no local setup needed, contribute directly from your browser.
 
-<a href="https://hosted.weblate.org/engage/internetradio/"><img src="https://hosted.weblate.org/widget/internetradio/multi-auto.svg"></a>
 
 ## Acknowledgments
 
@@ -124,3 +87,8 @@ Translations are managed on <a href="https://hosted.weblate.org/projects/interne
 ## License
 
 This project is licensed under the GNU GPL v3 License - see the [LICENSE](LICENSE) file for details.
+
+### Third-Party Credits
+
+"[pocket-radio](https://iconify.design)" icon created by **GameIcons** (from Game Icons on Iconify), licensed under **[CC BY 3.0](https://creativecommons.org)**. Modified from the original.
+
